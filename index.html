@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Herramienta Graficadora Estadística</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/@sgratzl/chartjs-chart-boxplot@3.6.0/build/index.umd.min.js"></script>
+    <script src="app.js" defer></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        table {
+            margin: 20px auto;
+            border-collapse: collapse;
+            width: 90%;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
+
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 5px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border: 1px solid #ddd;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            width: 90%;
+            max-width: 800px;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        .close-modal {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            float: right;
+        }
+
+        canvas {
+            max-width: 100%;
+            max-height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Herramienta Graficadora Estadística</h1>
+        <table id="dataTable">
+            <thead>
+                <tr>
+                    <th>Etiqueta</th>
+                    <th><input type="text"placeholder="Atributo"></th>
+                    <th><input type="text"placeholder="Atributo"></th>
+                    <th><button onclick="addColumn()">Añadir Columna</button></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><input type="text" placeholder="Etiqueta"></td>
+                    <td><input type="number" placeholder="0"></td>
+                    <td><input type="number" placeholder="0"></td>
+                    <td><button onclick="deleteRow(this)">Eliminar Fila</button></td>
+                </tr>
+            </tbody>
+        </table>
+        <button onclick="addRow()">Añadir Fila</button>
+        <select id="chartType">
+            <option value="bar">Gráfico Barras</option>
+            <option value="line">Gráfico Líneas</option>
+            <option value="pie">Gráfico Circular</option>
+            <option value="boxplot">Diagrama de Cajas</option>
+        </select>
+        <button onclick="showModal()">Generar Gráfico</button>
+    </div>
+
+    <!-- Modal para mostrar el gráfico -->
+    <div class="modal-overlay" id="modalOverlay"></div>
+    <div class="modal" id="modal">
+        <button class="close-modal" onclick="closeModal()">Cerrar</button>
+        <canvas id="chartCanvas"></canvas>
+        <div class="results">
+            <h3>Cálculos Estadísticos</h3>
+            <p id="mean"></p>
+            <p id="median"></p>
+            <p id="mode"></p>
+            <p id="stddev"></p>
+        </div>
+    </div>
+</body>
+</html>
