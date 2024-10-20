@@ -3,7 +3,7 @@ let chart; // Variable global para el gráfico
 function addRow() {
     const tableBody = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
     const newRow = tableBody.insertRow();
-    const columnCount = tableBody.rows[0].cells.length - 1;
+    const columnCount = document.querySelector('#dataTable thead tr').cells.length - 1;
 
     const labelCell = newRow.insertCell(0);
     labelCell.innerHTML = `<input type="text" placeholder="Etiqueta">`;
@@ -20,6 +20,25 @@ function addRow() {
 function deleteRow(button) {
     const row = button.parentNode.parentNode;
     row.parentNode.removeChild(row);
+}
+
+function deleteColumn() {
+    const table = document.getElementById('dataTable');
+    const headerRow = table.getElementsByTagName('thead')[0].rows[0];
+    const bodyRows = table.getElementsByTagName('tbody')[0].rows;
+
+    // Verifica si hay más de una columna para evitar eliminar todas
+    if (headerRow.cells.length > 2) {
+        // Elimina el penúltimo encabezado (antes del botón "Añadir Columna")
+        headerRow.deleteCell(headerRow.cells.length - 2);
+
+        // Elimina la penúltima celda de cada fila de datos (antes del botón "Eliminar Fila")
+        for (let i = 0; i < bodyRows.length; i++) {
+            bodyRows[i].deleteCell(bodyRows[i].cells.length - 2);
+        }
+    } else {
+        alert("No puedes eliminar todas las columnas.");
+    }
 }
 
 function addColumn() {
@@ -56,8 +75,10 @@ function getDataFromTable() {
 
         if (datasetLabel) {
             for (let j = 1; j < cells.length - 1; j++) {
-                const value = parseFloat(cells[j].querySelector('input').value);
-                datasetData.push(isNaN(value) ? 0 : value);
+                const value = cells[j].querySelector('input').value;
+                if (value !== '' && !isNaN(value)) { // Ignorar valores vacíos y asegurarse de que sean números
+                    datasetData.push(parseFloat(value));
+                }
             }
 
             datasets.push({
@@ -70,7 +91,6 @@ function getDataFromTable() {
         }
     }
 
-    // Usar los valores de los atributos (primera fila de inputs) como etiquetas para el eje x
     return { labels: headerInputs, datasets };
 }
 
@@ -92,6 +112,14 @@ function generateBrightColors(count) {
 function showModal() {
     const { labels, datasets } = getDataFromTable();
     generateChart(labels, datasets);
+
+    // Actualizar el título y descripción en el modal
+    const title = document.getElementById('graphTitle').value;
+    const subtitle = document.getElementById('graphSubtitle').value;
+    document.getElementById('chartTitleText').innerText = title;
+    document.getElementById('chartSubtitleText').innerText = subtitle;
+
+    // Mostrar el modal del gráfico
     document.getElementById('modal').style.display = 'block';
     document.getElementById('modalOverlay').style.display = 'block';
 }
@@ -104,25 +132,52 @@ function closeModal() {
 function generateChart(labels, datasets) {
     const chartType = document.getElementById('chartType').value;
     const ctx = document.getElementById('chartCanvas').getContext('2d');
+    const chartDescription = document.getElementById('chartDescription');
 
     if (chart) {
         chart.destroy();
     }
 
     if (chartType === 'boxplot') {
-        const allValues = datasets.flatMap(ds => ds.data);
-        const boxPlotData = [{
-            min: Math.min(...allValues),
-            q1: quantile(allValues, 0.25),
-            median: quantile(allValues, 0.5),
-            q3: quantile(allValues, 0.75),
-            max: Math.max(...allValues)
-        }];
+        // Crear un array de datos por columna en lugar de filas
+        const table = document.getElementById('dataTable');
+        const bodyRows = table.getElementsByTagName('tbody')[0].rows;
+        const columnData = [];
+
+        // Inicializar arrays para cada columna
+        const columnCount = bodyRows[0].cells.length - 2;
+        for (let j = 0; j < columnCount; j++) {
+            columnData[j] = [];
+        }
+
+        // Rellenar los arrays de cada columna con los datos
+        for (let i = 0; i < bodyRows.length; i++) {
+            const cells = bodyRows[i].cells;
+            for (let j = 1; j <= columnCount; j++) {
+                const value = cells[j].querySelector('input').value;
+                if (value !== '' && !isNaN(value)) { // Solo incluir valores numéricos válidos
+                    columnData[j - 1].push(parseFloat(value));
+                }
+            }
+        }
+
+        // Crear datasets específicos para el gráfico de cajas
+        const boxPlotData = columnData.map((data, index) => {
+            if (data.length === 0) return null; // Ignorar columnas sin datos válidos
+            return {
+                label: labels[index],
+                min: Math.min(...data),
+                q1: quantile(data, 0.25),
+                median: quantile(data, 0.5),
+                q3: quantile(data, 0.75),
+                max: Math.max(...data)
+            };
+        }).filter(item => item !== null); // Filtrar elementos nulos
 
         chart = new Chart(ctx, {
             type: 'boxplot',
             data: {
-                labels: ['Datos'],
+                labels: labels, // Etiquetas para las columnas
                 datasets: [{
                     label: 'Diagrama de Cajas',
                     data: boxPlotData,
@@ -140,15 +195,28 @@ function generateChart(labels, datasets) {
             }
         });
     } else if (chartType === 'pie') {
-        // Usar solo el primer dataset para gráfico circular y diferentes colores para cada segmento
+        // Calcular promedios para el gráfico de pastel
+        const averages = labels.map((_, colIndex) => {
+            let sum = 0;
+            let count = 0;
+            datasets.forEach(ds => {
+                const value = parseFloat(ds.data[colIndex]);
+                if (!isNaN(value)) {
+                    sum += value;
+                    count++;
+                }
+            });
+            return count > 0 ? sum / count : 0;
+        });
+
         chart = new Chart(ctx, {
             type: 'pie',
             data: {
                 labels: labels,
                 datasets: [{
-                    data: datasets[0].data,
-                    backgroundColor: generateBrightColors(datasets[0].data.length), // Colores variados
-                    borderColor: generateBrightColors(datasets[0].data.length), // Colores para borde
+                    data: averages, // Usar promedios calculados
+                    backgroundColor: generateBrightColors(averages.length),
+                    borderColor: generateBrightColors(averages.length),
                     borderWidth: 1
                 }]
             },
@@ -166,11 +234,25 @@ function generateChart(labels, datasets) {
                                 size: 14
                             }
                         }
+                    },
+                    datalabels: {
+                        color: 'white',
+                        font: {
+                            weight: 'bold',
+                            size: 14
+                        },
+                        formatter: (value) => value.toFixed(2) // Muestra el valor en las etiquetas
                     }
                 }
-            }
+            },
+            plugins: [ChartDataLabels] // Activar el plugin
         });
+
+        // Mostrar descripción para el gráfico de pastel
+        chartDescription.style.display = 'block';
+        chartDescription.innerText = 'Este gráfico muestra el promedio de los datos por atributo.';
     } else {
+        // Otros gráficos
         chart = new Chart(ctx, {
             type: chartType,
             data: {
@@ -178,6 +260,8 @@ function generateChart(labels, datasets) {
                 datasets: datasets
             },
             options: {
+                responsive: true,
+                maintainAspectRatio: false,
                 scales: {
                     y: {
                         beginAtZero: true
@@ -185,23 +269,62 @@ function generateChart(labels, datasets) {
                 }
             }
         });
+
+        // Ocultar descripción si no es gráfico de pastel
+        chartDescription.style.display = 'none';
+    }
+}
+
+function downloadChart() {
+    const canvas = document.getElementById('chartCanvas');
+    const title = document.getElementById('chartTitleText').innerText;
+    const subtitle = document.getElementById('chartSubtitleText').innerText;
+    const description = document.getElementById('chartDescription').style.display === 'block' ? document.getElementById('chartDescription').innerText : '';
+
+    // Crear un canvas temporal para incluir texto y gráfico
+    const tempCanvas = document.createElement('canvas');
+    const ctx = tempCanvas.getContext('2d');
+
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height + 80; // Espacio adicional para el texto
+
+    // Dibujar el título y el subtítulo en el canvas temporal
+    ctx.fillStyle = "#000";
+    ctx.font = "20px Arial";
+    ctx.fillText(title, 10, 25);
+    ctx.font = "14px Arial";
+    ctx.fillText(subtitle, 10, 45);
+
+    // Dibujar el gráfico existente en el canvas temporal
+    ctx.drawImage(canvas, 0, 60);
+
+    // Agregar descripción para gráficos de pastel
+    if (description) {
+        ctx.font = "12px Arial";
+        ctx.fillText(description, 10, tempCanvas.height - 20);
     }
 
-    // Mostrar estadísticas en el modal
-    displayStatistics(datasets.flatMap(ds => ds.data));
+    // Descargar la imagen como PNG
+    const link = document.createElement('a');
+    link.href = tempCanvas.toDataURL('image/png');
+    link.download = 'grafico.png';
+    link.click();
 }
 
 function displayStatistics(data) {
-    if (data.length === 0) {
+    // Filtrar valores no válidos (NaN)
+    const validData = data.filter(value => !isNaN(value));
+
+    if (validData.length === 0) {
         document.getElementById('mean').innerText = `Media: N/A`;
         document.getElementById('median').innerText = `Mediana: N/A`;
         document.getElementById('mode').innerText = `Moda: N/A`;
         return;
     }
 
-    const meanValue = (data.reduce((acc, val) => acc + val, 0) / data.length).toFixed(2);
-    const medianValue = quantile(data, 0.5).toFixed(2);
-    const modeValue = getMode(data).toString();
+    const meanValue = (validData.reduce((acc, val) => acc + val, 0) / validData.length).toFixed(2);
+    const medianValue = quantile(validData, 0.5).toFixed(2);
+    const modeValue = getMode(validData).toString();
 
     document.getElementById('mean').innerText = `Media: ${meanValue}`;
     document.getElementById('median').innerText = `Mediana: ${medianValue}`;
@@ -209,7 +332,7 @@ function displayStatistics(data) {
 }
 
 function quantile(arr, q) {
-    const sorted = arr.slice().sort((a, b) => a - b);
+    const sorted = arr.filter(value => !isNaN(value)).sort((a, b) => a - b); // Ignorar valores NaN
     const pos = (sorted.length - 1) * q;
     const base = Math.floor(pos);
     const rest = pos - base;
@@ -217,12 +340,74 @@ function quantile(arr, q) {
 }
 
 function getMode(arr) {
+    const validArr = arr.filter(value => !isNaN(value)); // Ignorar valores NaN
     const freq = {};
-    arr.forEach(val => {
+    validArr.forEach(val => {
         freq[val] = (freq[val] || 0) + 1;
     });
 
     const maxFreq = Math.max(...Object.values(freq));
     const modes = Object.keys(freq).filter(key => freq[key] === maxFreq);
-    return modes.length === arr.length ? 'No hay moda' : modes;
+    return modes.length === validArr.length ? 'No hay moda' : modes;
 }
+
+function showStatisticsModal() {
+    const { sortedData } = getSortedData();
+    displaySortedData(sortedData);
+    displayStatistics(sortedData.flat());
+
+    // Mostrar el modal de estadísticas
+    document.getElementById('statsModal').style.display = 'block';
+    document.getElementById('statsModalOverlay').style.display = 'block';
+}
+
+function closeStatisticsModal() {
+    document.getElementById('statsModal').style.display = 'none';
+    document.getElementById('statsModalOverlay').style.display = 'none';
+}
+
+function getSortedData() {
+    const table = document.getElementById('dataTable');
+    const rows = table.getElementsByTagName('tbody')[0].rows;
+
+    let allData = [];
+
+    // Recolectar todos los datos numéricos en una sola lista, ignorando celdas vacías
+    for (let colIndex = 1; colIndex < rows[0].cells.length - 1; colIndex++) {
+        const columnData = Array.from(rows).map(row => {
+            const cellValue = row.cells[colIndex].querySelector('input').value;
+            return cellValue !== '' ? parseFloat(cellValue) : null; // Solo incluir valores numéricos válidos
+        }).filter(value => value !== null); // Ignorar valores nulos
+        allData = allData.concat(columnData);
+    }
+
+    // Ordenar todos los datos en una sola lista de menor a mayor
+    allData.sort((a, b) => a - b);
+
+    return { sortedData: allData };
+}
+
+function displaySortedData(sortedData) {
+    const sortedDataBody = document.getElementById('sortedDataBody');
+    sortedDataBody.innerHTML = '';
+    // Mostrar los datos ordenados en filas similares a la imagen proporcionada
+    const columnsPerRow = 4; // Define cuántas columnas por fila se mostrarán
+    let row;
+    sortedData.forEach((value, index) => {
+        if (index % columnsPerRow === 0) {
+            row = document.createElement('tr');
+            sortedDataBody.appendChild(row);
+        }
+        const cell = document.createElement('td');
+        cell.textContent = value;
+        row.appendChild(cell);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Asegurar que el botón de estadísticas esté correctamente vinculado
+    const statsButton = document.querySelector('button[onclick="showStatisticsModal()"]');
+    if (statsButton) {
+        statsButton.addEventListener('click', showStatisticsModal);
+    }
+});

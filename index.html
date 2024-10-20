@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Herramienta Graficadora Estadística</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/@sgratzl/chartjs-chart-boxplot@3.6.0/build/index.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
     <script src="app.js" defer></script>
     <style>
         body {
@@ -25,7 +27,8 @@
             width: 90%;
         }
 
-        th, td {
+        th,
+        td {
             border: 1px solid #ddd;
             padding: 8px;
             text-align: center;
@@ -35,7 +38,8 @@
             background-color: #f4f4f4;
         }
 
-        input[type="text"], input[type="number"] {
+        input[type="text"],
+        input[type="number"] {
             width: 100%;
             padding: 5px;
         }
@@ -51,6 +55,19 @@
 
         button:hover {
             background-color: #45a049;
+        }
+
+        .button-group-horizontal {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .button-group-horizontal button {
+            margin: 0 5px;
+            /* Ajustar margen solo horizontalmente */
+            padding: 10px 20px;
+            /* Asegurar que el tamaño coincida con el de los otros botones */
         }
 
         .modal {
@@ -90,20 +107,32 @@
 
         canvas {
             max-width: 100%;
-            max-height: 400px;
+            max-height: 500px;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>Herramienta Graficadora Estadística</h1>
+        <div class="graph-controls">
+            <input type="text" id="graphTitle" placeholder="Añade un título a tu gráfico"
+                style="width: 80%; padding: 5px; margin: 10px 0;">
+            <input type="text" id="graphSubtitle" placeholder="Añade una descripción a tu gráfico"
+                style="width: 80%; padding: 5px; margin: 10px 0;">
+        </div>
         <table id="dataTable">
             <thead>
                 <tr>
                     <th>Etiqueta</th>
-                    <th><input type="text"placeholder="Atributo"></th>
-                    <th><input type="text"placeholder="Atributo"></th>
-                    <th><button onclick="addColumn()">Añadir Columna</button></th>
+                    <th><input type="text" placeholder="Atributo"></th>
+                    <th><input type="text" placeholder="Atributo"></th>
+                    <th>
+                        <div class="button-group-horizontal">
+                            <button onclick="addColumn()">Añadir Columna</button>
+                            <button onclick="deleteColumn()">Eliminar Columna</button>
+                        </div>
+                    </th>
                 </tr>
             </thead>
             <tbody>
@@ -123,20 +152,40 @@
             <option value="boxplot">Diagrama de Cajas</option>
         </select>
         <button onclick="showModal()">Generar Gráfico</button>
+        <button onclick="showStatisticsModal()">Generar Medidas Estadísticas</button>
     </div>
 
     <!-- Modal para mostrar el gráfico -->
     <div class="modal-overlay" id="modalOverlay"></div>
     <div class="modal" id="modal">
         <button class="close-modal" onclick="closeModal()">Cerrar</button>
+        <h3 id="chartTitleText"></h3>
+        <p id="chartSubtitleText" style="font-style: italic; color: gray;"></p>
         <canvas id="chartCanvas"></canvas>
+        <p id="chartDescription" style="display: none; font-style: italic; margin-top: 10px;"></p>
+        <button onclick="downloadChart()">Descargar Gráfico como PNG</button>
+    </div>
+
+
+    <!-- Modal para mostrar las medidas estadísticas -->
+    <div class="modal-overlay" id="statsModalOverlay"></div>
+    <div class="modal" id="statsModal">
+        <button class="close-modal" onclick="closeStatisticsModal()">Cerrar</button>
+        <h3>Medidas Estadísticas</h3>
+        <h4>Tabla con los datos ordenados de menor a mayor a continuación:</h4>
+        <!-- El mensaje se manejará desde el JS -->
+        <table class="results-table" id="sortedDataTable">
+            <tbody id="sortedDataBody"></tbody>
+        </table>
+        <!-- Mostrar las estadísticas debajo de la tabla -->
+        <hr>
         <div class="results">
-            <h3>Cálculos Estadísticos</h3>
             <p id="mean"></p>
             <p id="median"></p>
             <p id="mode"></p>
-            <p id="stddev"></p>
         </div>
+        <hr>
     </div>
 </body>
+
 </html>
