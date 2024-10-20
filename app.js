@@ -311,6 +311,61 @@ function downloadChart() {
     link.click();
 }
 
+function downloadStatistics() {
+    const title = "Medidas Estadísticas";
+    const description = "Tabla con los datos ordenados de menor a mayor a continuación:";
+    const table = document.getElementById('sortedDataTable');
+    const meanText = document.getElementById('mean').innerText;
+    const medianText = document.getElementById('median').innerText;
+    const modeText = document.getElementById('mode').innerText;
+
+    // Crear un canvas temporal para incluir texto y tabla
+    const tempCanvas = document.createElement('canvas');
+    const ctx = tempCanvas.getContext('2d');
+
+    // Configurar dimensiones del canvas
+    tempCanvas.width = 800;
+    tempCanvas.height = 400; // Ajustar para el tamaño necesario
+
+    // Estilo de texto y encabezados
+    ctx.fillStyle = "#000";
+    ctx.font = "20px Arial";
+    ctx.fillText(title, 10, 30);
+    
+    ctx.font = "14px Arial";
+    ctx.fillText(description, 10, 60);
+
+    // Dibujar la tabla en el canvas
+    let startY = 80; // Punto de inicio para la tabla
+    const rowHeight = 25; // Altura de cada fila
+    const columnWidth = tempCanvas.width / table.rows[0].cells.length;
+
+    // Recorrer filas y columnas de la tabla para dibujarlas en el canvas
+    for (let rowIndex = 0; rowIndex < table.rows.length; rowIndex++) {
+        const row = table.rows[rowIndex];
+        for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex++) {
+            const cell = row.cells[cellIndex];
+            ctx.strokeStyle = '#ddd';
+            ctx.strokeRect(cellIndex * columnWidth, startY, columnWidth, rowHeight);
+            ctx.fillText(cell.innerText, cellIndex * columnWidth + 10, startY + 18);
+        }
+        startY += rowHeight; // Moverse a la siguiente fila
+    }
+
+    // Dibujar las estadísticas debajo de la tabla
+    ctx.font = "16px Arial";
+    ctx.fillText(meanText, 10, startY + 30);
+    ctx.fillText(medianText, 10, startY + 60);
+    ctx.fillText(modeText, 10, startY + 90);
+
+    // Descargar la imagen como PNG
+    const link = document.createElement('a');
+    link.href = tempCanvas.toDataURL('image/png');
+    link.download = 'medidas_estadisticas.png';
+    link.click();
+}
+
+
 function displayStatistics(data) {
     // Filtrar valores no válidos (NaN)
     const validData = data.filter(value => !isNaN(value));
@@ -340,15 +395,20 @@ function quantile(arr, q) {
 }
 
 function getMode(arr) {
-    const validArr = arr.filter(value => !isNaN(value)); // Ignorar valores NaN
     const freq = {};
-    validArr.forEach(val => {
+    arr.forEach(val => {
         freq[val] = (freq[val] || 0) + 1;
     });
 
     const maxFreq = Math.max(...Object.values(freq));
     const modes = Object.keys(freq).filter(key => freq[key] === maxFreq);
-    return modes.length === validArr.length ? 'No hay moda' : modes;
+
+    // Si hay más de un valor con la frecuencia máxima o si todos tienen la misma frecuencia, no hay moda
+    if (modes.length > 2 || modes.length === arr.length) {
+        return 'No hay moda';
+    }
+
+    return modes;
 }
 
 function showStatisticsModal() {
