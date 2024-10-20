@@ -1,25 +1,41 @@
 let chart; // Variable global para el gráfico
 
-function addRow() {
+function addRowBelow(button) {
+    // Obtener la fila actual donde se hizo clic en "Añadir Fila"
+    const currentRow = button.closest('tr');
     const tableBody = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
-    const newRow = tableBody.insertRow();
+    const newRow = document.createElement('tr');
     const columnCount = document.querySelector('#dataTable thead tr').cells.length - 1;
 
+    // Crear las celdas de la nueva fila
     const labelCell = newRow.insertCell(0);
-    labelCell.innerHTML = `<input type="text" placeholder="Etiqueta">`;
+    labelCell.innerHTML = `<input type="text" class="form-control" placeholder="Etiqueta">`;
 
     for (let i = 1; i < columnCount; i++) {
         const cell = newRow.insertCell(i);
-        cell.innerHTML = `<input type="number" placeholder="0">`;
+        cell.innerHTML = `<input type="number" class="form-control" placeholder="0">`;
     }
 
-    const deleteCell = newRow.insertCell(columnCount);
-    deleteCell.innerHTML = `<button onclick="deleteRow(this)">Eliminar Fila</button>`;
+    const actionCell = newRow.insertCell(columnCount);
+    actionCell.innerHTML = `
+            <button class="btn btn-primary btn-lg btn-sm mx-1 btnBR" onclick="addRowBelow(this)">Añadir Fila</button>
+            <button class="btn btn-danger btn-lg btn-sm mx-1 btnBR" onclick="deleteRow(this)">Eliminar Fila</button>
+    `;
+
+    // Insertar la nueva fila justo después de la fila actual
+    currentRow.insertAdjacentElement('afterend', newRow);
 }
 
 function deleteRow(button) {
-    const row = button.parentNode.parentNode;
-    row.parentNode.removeChild(row);
+    const table = button.parentNode.parentNode.parentNode; // Obtén la tabla contenedora
+    const rows = table.getElementsByTagName("tr"); // Obtén todas las filas de la tabla
+
+    if (rows.length > 1) { // Verifica si hay más de una fila
+        const row = button.parentNode.parentNode;
+        row.parentNode.removeChild(row);
+    } else {
+        alert("No se puede eliminar la última fila.");
+    }
 }
 
 function deleteColumn() {
@@ -28,7 +44,7 @@ function deleteColumn() {
     const bodyRows = table.getElementsByTagName('tbody')[0].rows;
 
     // Verifica si hay más de una columna para evitar eliminar todas
-    if (headerRow.cells.length > 2) {
+    if (headerRow.cells.length > 3) {
         // Elimina el penúltimo encabezado (antes del botón "Añadir Columna")
         headerRow.deleteCell(headerRow.cells.length - 2);
 
@@ -48,13 +64,13 @@ function addColumn() {
 
     // Crear un nuevo encabezado y añadirlo antes del último th (donde está el botón)
     const newHeader = document.createElement('th');
-    newHeader.innerHTML = `<input type="text" placeholder="Atributo">`;
+    newHeader.innerHTML = `<input type="text" class="form-control" placeholder="Atributo">`;
     headerRow.insertBefore(newHeader, headerRow.lastElementChild);
 
     // Añadir una nueva celda en cada fila de datos
     for (let i = 0; i < bodyRows.length; i++) {
         const newCell = bodyRows[i].insertCell(bodyRows[i].cells.length - 1);
-        newCell.innerHTML = `<input type="number" placeholder="0">`;
+        newCell.innerHTML = `<input type="number" class="form-control" placeholder="0">`;
     }
 }
 
@@ -130,9 +146,14 @@ function closeModal() {
 }
 
 function generateChart(labels, datasets) {
-    const chartType = document.getElementById('chartType').value;
+    const chartType = getSelectedChartType();
     const ctx = document.getElementById('chartCanvas').getContext('2d');
     const chartDescription = document.getElementById('chartDescription');
+
+    if (!chartType) {
+        alert("Por favor, selecciona un tipo de gráfico.");
+        return;
+    }
 
     if (chart) {
         chart.destroy();
@@ -331,7 +352,7 @@ function downloadStatistics() {
     ctx.fillStyle = "#000";
     ctx.font = "20px Arial";
     ctx.fillText(title, 10, 30);
-    
+
     ctx.font = "14px Arial";
     ctx.fillText(description, 10, 60);
 
@@ -450,14 +471,19 @@ function getSortedData() {
 function displaySortedData(sortedData) {
     const sortedDataBody = document.getElementById('sortedDataBody');
     sortedDataBody.innerHTML = '';
-    // Mostrar los datos ordenados en filas similares a la imagen proporcionada
-    const columnsPerRow = 4; // Define cuántas columnas por fila se mostrarán
-    let row;
+
+    // Definir cuántas columnas por fila se mostrarán
+    const columnsPerRow = 4;
+    let row = null;
+
     sortedData.forEach((value, index) => {
+        // Crear una nueva fila si el índice es múltiplo de 'columnsPerRow'
         if (index % columnsPerRow === 0) {
             row = document.createElement('tr');
             sortedDataBody.appendChild(row);
         }
+
+        // Crear y añadir celdas a la fila actual
         const cell = document.createElement('td');
         cell.textContent = value;
         row.appendChild(cell);
@@ -471,3 +497,22 @@ document.addEventListener('DOMContentLoaded', () => {
         statsButton.addEventListener('click', showStatisticsModal);
     }
 });
+
+function selectSingleChart(selectedCheckbox) {
+    const checkboxes = document.querySelectorAll('.chart-option');
+    checkboxes.forEach(checkbox => {
+        if (checkbox !== selectedCheckbox) {
+            checkbox.checked = false;
+        }
+    });
+}
+
+function getSelectedChartType() {
+    const checkboxes = document.querySelectorAll('.chart-option');
+    for (const checkbox of checkboxes) {
+        if (checkbox.checked) {
+            return checkbox.value;
+        }
+    }
+    return null; // Si no hay ninguno seleccionado
+}
