@@ -2,6 +2,9 @@ body {
     font-family: 'Poppins', sans-serif;
     background-color: #e2ffeb;
     color: #333;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 .header {
@@ -19,11 +22,17 @@ body {
 .container {
     max-width: 1200px;
     margin: 0 auto;
+    flex: 1;
 }
 
 .table-responsive {
+    display: flex; 
+    justify-content: space-between;
+    align-items: center;
+    overflow-x: auto; 
     max-height: 400px;
     overflow-y: auto;
+    
 }
 
 .btn-lg {
@@ -32,6 +41,7 @@ body {
     margin: 5px 0;
     background-color: #2db72d;
     border-color: #2db72d;
+    white-space: nowrap; 
 }
 
 .footer {
@@ -39,9 +49,8 @@ body {
     color: white;
     text-align: center;
     padding: 6px 0;
-    position: relative;
     width: 100%;
-    bottom: 0;
+    position: relative;
 }
 
 textarea.form-control {
@@ -103,3 +112,48 @@ canvas {
     text-align: center;
     border: 1px solid #ddd;
 }
+
+.decorative-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: -1; /* Asegúrate de que esté detrás del contenido */
+}
+
+.chart-bar-deco, .chart-line-deco, .chart-pie-deco, .chart-box-deco {
+    position: absolute;
+    font-size: 100px; /* Tamaño grande para que sean visibles */
+    opacity: 0.1; /* Baja opacidad para que no distraigan demasiado */
+    color: #d28c2b; /* Color suave */
+    pointer-events: none; /* Evita la interacción */
+}
+
+/* Ícono de gráfico de barras (dejarlo en la parte superior izquierda) */
+.chart-bar-deco {
+    top: 10%;
+    left: 5%;
+    transform: rotate(-15deg);
+}
+
+/* Ícono de gráfico lineal (dejarlo en la parte inferior derecha) */
+.chart-line-deco {
+    bottom: 10%;
+    right: 20%;
+    transform: rotate(10deg);
+}
+
+/* Ícono de gráfico de pastel (posicionar en la parte superior derecha) */
+.chart-pie-deco {
+    top: 25%;
+    right: 10%;
+    transform: rotate(0deg);
+}
+.chart-box-deco {
+    bottom: 15%; 
+    right: 90%;  
+    transform: rotate(-10deg); 
+}
+
