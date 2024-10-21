@@ -386,6 +386,87 @@ function downloadStatistics() {
     link.click();
 }
 
+function exportTableAsPNG() {
+    const title = document.getElementById('graphTitle').value;
+    const subtitle = document.getElementById('graphSubtitle').value;
+    const table = document.getElementById('dataTable');
+
+    // Verificar si el título, la descripción o la tabla han sido modificados
+    const isTitleModified = title.trim() !== '';
+    const isSubtitleModified = subtitle.trim() !== '';
+    const isTableModified = checkIfTableIsModified();
+
+    if (!isTitleModified && !isSubtitleModified && !isTableModified) {
+        alert("Por favor, modifica el título, la descripción o la tabla antes de exportar.");
+        return;
+    }
+
+    // Crear un canvas temporal para incluir texto y tabla
+    const tempCanvas = document.createElement('canvas');
+    const ctx = tempCanvas.getContext('2d');
+
+    // Ajustar dimensiones del canvas según el contenido
+    const canvasWidth = 800;
+    let canvasHeight = 200; // Altura inicial para título y descripción
+
+    const rows = table.getElementsByTagName('tr');
+    canvasHeight += rows.length * 30; // Altura dinámica basada en la cantidad de filas
+
+    tempCanvas.width = canvasWidth;
+    tempCanvas.height = canvasHeight;
+
+    // Añadir título y descripción al canvas si están modificados
+    ctx.fillStyle = "#000";
+    ctx.font = "20px Arial";
+    if (isTitleModified) {
+        ctx.fillText(title, 10, 30);
+    }
+    if (isSubtitleModified) {
+        ctx.font = "14px Arial";
+        ctx.fillText(subtitle, 10, 60);
+    }
+
+    // Dibujar la tabla en el canvas
+    let startY = 80; // Punto de inicio para la tabla
+    const rowHeight = 30; // Altura de cada fila
+    const columnWidth = canvasWidth / (rows[0].cells.length - 1); // Ajustar a la cantidad de columnas
+
+    for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+        const row = rows[rowIndex];
+        for (let cellIndex = 0; cellIndex < row.cells.length - 1; cellIndex++) {
+            const cell = row.cells[cellIndex];
+            ctx.strokeStyle = '#ddd';
+            ctx.strokeRect(cellIndex * columnWidth, startY, columnWidth, rowHeight);
+            const inputElement = cell.querySelector('input');
+            const cellValue = inputElement ? inputElement.value : ''; // Verificar si existe un input antes de intentar acceder al valor
+            ctx.fillText(cellValue, cellIndex * columnWidth + 10, startY + 20);
+        }
+        startY += rowHeight;
+    }
+
+    // Descargar la imagen como PNG
+    const link = document.createElement('a');
+    link.href = tempCanvas.toDataURL('image/png');
+    link.download = 'tabla_grafico.png';
+    link.click();
+}
+
+// Función para verificar si la tabla ha sido modificada
+function checkIfTableIsModified() {
+    const table = document.getElementById('dataTable');
+    const rows = table.getElementsByTagName('tbody')[0].rows;
+
+    for (let i = 0; i < rows.length; i++) {
+        const cells = rows[i].cells;
+        for (let j = 0; j < cells.length - 1; j++) {
+            const inputValue = cells[j].querySelector('input').value.trim();
+            if (inputValue !== "" && inputValue !== "0") {
+                return true;
+            }
+        }
+    }
+    return false;
+}
 
 function displayStatistics(data) {
     // Filtrar valores no válidos (NaN)

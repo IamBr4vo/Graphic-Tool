@@ -5,6 +5,8 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    margin: 0;
+    padding: 0;
 }
 
 .header {
@@ -20,19 +22,28 @@ body {
 }
 
 .container {
+    padding: 20px;
     max-width: 1200px;
     margin: 0 auto;
     flex: 1;
 }
 
 .table-responsive {
-    display: flex; 
+    max-height: 400px;
+    display: block; 
     justify-content: space-between;
     align-items: center;
     overflow-x: auto; 
-    max-height: 400px;
     overflow-y: auto;
+    width: 100%;
     
+}
+
+.table-responsive input.form-control {
+    min-width: 80px;
+    /* Asegurar un ancho mínimo */
+    max-width: 150px;
+    /* Limitar el ancho máximo */
 }
 
 .btn-lg {
@@ -51,15 +62,11 @@ body {
     padding: 6px 0;
     width: 100%;
     position: relative;
+    margin-top: auto;
 }
 
 textarea.form-control {
     resize: none;
-}
-
-.table-responsive {
-    max-height: 400px;
-    overflow-y: auto;
 }
 
 .modal {
@@ -157,3 +164,93 @@ canvas {
     transform: rotate(-10deg); 
 }
 
+td {
+    white-space: nowrap;
+    vertical-align: middle; /* Centrar verticalmente el contenido */
+}
+
+td .btnBR {
+    display: inline-block; /* Asegura que los botones permanezcan uno al lado del otro */
+    margin: 2px; /* Reduce el espacio para evitar que se separen */
+}
+
+
+@media (max-width: 768px) {
+    /* Ajustar el contenedor de los botones para columnas */
+    th .d-flex {
+        display: flex;
+        flex-wrap: nowrap; /* Evita que los botones se vayan a la siguiente línea */
+        justify-content: center; /* Centra los botones horizontalmente */
+    }
+
+    /* Asegura que los botones de acción de columna se mantengan alineados */
+    th .btn {
+        margin: 2px; /* Espacio mínimo entre los botones */
+        flex: 1; /* Permite que ambos botones usen el mismo espacio */
+        white-space: nowrap; /* Evita que el texto de los botones se divida en múltiples líneas */
+    }
+
+    /* Mantiene los botones juntos en una línea sin colapsar */
+    th {
+        vertical-align: middle;
+    }
+}
+
+/* Estilos específicos para pantallas pequeñas (por debajo de 576px) */
+@media (max-width: 576px) {
+    .container {
+        padding: 10px;
+        /* Reducir el padding para móviles */
+        max-width: 100%;
+        /* Permitir que use todo el ancho en pantallas pequeñas */
+        margin: 0 auto;
+    }
+
+    .btn-lg {
+        font-size: 12px;
+        /* Reducir el tamaño de texto en botones */
+        padding: 6px 8px;
+        /* Reducir el padding de los botones */
+        margin: 3px 2px;
+        /* Reducir el margen */
+    }
+
+    .table-responsive {
+        max-width: 100%;
+        /* Usar todo el ancho en móviles */
+    }
+
+    /* Ajustar el ancho de las celdas de la tabla */
+    .table-responsive input.form-control {
+        width: 80px;
+        /* Limitar el ancho para que quepan mejor en pantallas pequeñas */
+        font-size: 12px;
+    }
+
+    /* Colocar botones debajo de la tabla en una sola columna */
+    .d-flex {
+        flex-direction: column;
+        /* Cambiar la dirección de flex para que los botones estén en columna */
+        align-items: stretch;
+        /* Asegurar que los botones ocupen todo el ancho */
+    }
+
+    .header h1 {
+        font-size: 24px;
+        /* Reducir el tamaño del título en móviles */
+    }
+
+    /* Asegurar que la tabla no se comprima demasiado */
+    .table-responsive table {
+        font-size: 12px;
+        /* Reducir el tamaño de fuente de la tabla */
+    }
+
+    /* Ajustar el footer para que no quede fijo en pantallas móviles */
+    .footer {
+        position: relative;
+        bottom: 0;
+        width: 100%;
+        padding: 10px 0;
+    }
+}
