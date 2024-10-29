@@ -17,8 +17,12 @@
 </head>
 
 <body>
-    <div class="header d-flex justify-content-center align-items-center px-3 py-2 mb-3">
-        <h1 class="text-center">Herramienta Graficadora Estadística</h1>
+    <div class="header d-flex justify-content-between align-items-center px-3 py-2">
+        <h1 class="text-center flex-grow-1">Herramienta Graficadora Estadística</h1>
+        <button class="btn btn-info btn-sm btn-lg mx-2">
+            <img src="faq.png" style="width: 35px; height: 35px; margin-right: 7px;">
+            FAQ
+        </button>
     </div>
     <div class="container my-4 mt-5">
         <!-- Sección de Título y Descripción -->
@@ -98,8 +102,12 @@
         <div class="d-flex justify-content-between mt-3">
             <div>
                 <button class="btn btn-primary btn-lg btn-sm mx-1 mb-3" onclick="showModal()">Generar Gráfico</button>
-                <button class="btn btn-primary btn-lg btn-sm mx-1 mb-3" onclick="showStatisticsModal()">Generar Medidas Estadísticas</button>
-                <button class="btn btn-success btn-lg btn-sm mx-1 mb-3" onclick="exportTableAsPNG()">Exportar Tabla como PNG</button>
+                <button class="btn btn-primary btn-lg btn-sm mx-1 mb-3" onclick="showStatisticsModal()">Generar Medidas
+                    Estadísticas</button>
+                <button class="btn btn-success btn-lg btn-sm mx-1 mb-3" onclick="exportTableAsPNG()">Exportar Tabla como
+                    PNG</button>
+                <button class="btn btn-success btn-lg btn-sm mx-1 mb-3" onclick="clearTableData()">Limpiar
+                    Tabla</button>
             </div>
         </div>
 
@@ -111,7 +119,8 @@
             <p id="chartSubtitleText" style="font-style: italic; color: gray;"></p>
             <canvas id="chartCanvas"></canvas>
             <p id="chartDescription" style="display: none; font-style: italic; margin-top: 10px;"></p>
-            <button class="btn btn-primary btn-lg btn-sm mx-1 mt-4" onclick="downloadChart()">Descargar Gráfico como
+            <p id="chartDescriptionOtherGraphics" style="display: none; font-style: italic; margin-top: 10px;"></p>
+            <button class="btn btn-primary btn-lg mx-1 mt-4" onclick="downloadChart()">Descargar Gráfico como
                 PNG</button>
         </div>
 
@@ -129,7 +138,7 @@
             <button class="btn btn-danger btn-lg btn-sm mx-1 close-modal"
                 onclick="closeStatisticsModal()">Volver</button>
             <h3>Medidas Estadísticas</h3>
-            <h4>Tabla con los datos ordenados de menor a mayor a continuación:</h4>
+            <h5>Tabla con los datos ordenados de menor a mayor a continuación:</h5>
             <!-- El mensaje se manejará desde el JS -->
             <table class="table table-bordered results-table mt-4" id="sortedDataTable">
                 <tbody id="sortedDataBody"></tbody>
@@ -140,10 +149,51 @@
                 <p id="mean"></p>
                 <p id="median"></p>
                 <p id="mode"></p>
+                <p id="quartiles"></p>
+                <p id="percentiles"></p>
+                <p id="range"></p>
+                <p id="meanDeviation"></p>
+                <p id="variance"></p>
+                <p id="stdDeviation"></p>
+                <p id="coefficientOfVariation"></p>
             </div>
             <hr>
             <button class="btn btn-primary btn-lg btn-sm mx-1 mt-4" onclick="downloadStatistics()">Descargar Medidas
                 Estadísticas como PNG</button>
+        </div>
+
+        <div>
+            <input type="number" id="classCount" placeholder="Número de clases" min="1" class="input-small">
+            <button class="btn btn-primary btn-lg btn-sm mx-1 mb-3" onclick="showFrequencyModal()">Generar Distribución
+                de Frecuencias</button>
+        </div>
+
+        <!-- Modal para Distribución de Frecuencias -->
+        <div id="frequencyModalOverlay" class="modal-overlay"></div>
+        <div id="frequencyModal" class="modalFrec">
+            <button class="btn btn-danger btn-lg btn-sm mx-1 mb-5 close-modal"
+                onclick="closeFrequencyModal()">Volver</button>
+            <h3>Distribución de Frecuencias</h3>
+            <h5>Acontinuación se realiza la Distribución de frecuencias en las clases indicadas</h5>
+            <div class="table-responsive">
+                <table class="table table-bordered col-md-10 mx-auto mt-4">
+                    <thead>
+                        <tr>
+                            <th>Límites Indicados</th>
+                            <th>Límites Reales</th>
+                            <th>Puntos Medios (Xi)</th>
+                            <th>Frecuencia Absoluta (Fi)</th>
+                            <th>Frecuencia Relativa (%)</th>
+                            <th>ACUM "menos de" (Absoluta)</th>
+                            <th>ACUM "menos de" (Relativa)</th>
+                            <th>ACUM "más de" (Absoluta)</th>
+                            <th>ACUM "más de" (Relativa)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="frequencyTableBody"></tbody>
+                </table>
+            </div>
+            <p id="amplitude"></p>
         </div>
     </div>
     <footer class="footer mt-5">

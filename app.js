@@ -92,9 +92,7 @@ function getDataFromTable() {
         if (datasetLabel) {
             for (let j = 1; j < cells.length - 1; j++) {
                 const value = cells[j].querySelector('input').value;
-                if (value !== '' && !isNaN(value)) { // Ignorar valores vacíos y asegurarse de que sean números
                     datasetData.push(parseFloat(value));
-                }
             }
 
             datasets.push({
@@ -111,21 +109,56 @@ function getDataFromTable() {
 }
 
 function getRandomBrightColor(alpha = 1) {
-    const r = Math.floor(Math.random() * 156 + 100); // Evitar tonos muy oscuros (rango de 100-255)
-    const g = Math.floor(Math.random() * 156 + 100);
-    const b = Math.floor(Math.random() * 156 + 100);
+    const r = Math.floor(Math.random() * 100); // Evitar tonos muy oscuros (rango de 100-255) ****************************************************************************
+    const g = Math.floor(Math.random() * 100);
+    const b = Math.floor(Math.random() * 100);
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 function generateBrightColors(count) {
     const colors = [];
     for (let i = 0; i < count; i++) {
-        colors.push(getRandomBrightColor(0.7)); // Colores más vivos y variados
+        colors.push(getRandomBrightColor(0.8)); // Colores más vivos y variados ***************************************************************************************
     }
     return colors;
 }
 
 function showModal() {
+    // Verificar que al menos haya un atributo, una etiqueta y un valor
+    const table = document.getElementById('dataTable');
+    const headerInputs = Array.from(table.getElementsByTagName('thead')[0].rows[0].cells)
+        .slice(1, -1) // Ignorar el primer y último th
+        .map(th => th.querySelector('input').value.trim());
+
+    const rows = table.getElementsByTagName('tbody')[0].rows;
+    let hasLabel = false;
+    let hasValue = false;
+
+    // Verificar que haya al menos una etiqueta y un valor
+    for (let i = 0; i < rows.length; i++) {
+        const cells = rows[i].cells;
+        const label = cells[0].querySelector('input').value.trim();
+        if (label) {
+            hasLabel = true;
+        }
+        for (let j = 1; j < cells.length - 1; j++) {
+            const value = cells[j].querySelector('input').value.trim();
+            if (value && !isNaN(value)) {
+                hasValue = true;
+                break;
+            }
+        }
+        if (hasLabel && hasValue) {
+            break;
+        }
+    }
+
+    // Validación general
+    if (headerInputs.every(attr => !attr) || !hasLabel || !hasValue) {
+        alert("Necesitas ingresar mínimo un atributo, una etiqueta y un valor para poder graficar.");
+        return;
+    }
+    
     const { labels, datasets } = getDataFromTable();
     generateChart(labels, datasets);
 
@@ -149,11 +182,26 @@ function generateChart(labels, datasets) {
     const chartType = getSelectedChartType();
     const ctx = document.getElementById('chartCanvas').getContext('2d');
     const chartDescription = document.getElementById('chartDescription');
+    const chartDescriptionOtherGraphics = document.getElementById('chartDescriptionOtherGraphics');
 
     if (!chartType) {
         alert("Por favor, selecciona un tipo de gráfico.");
         return;
     }
+
+     // Ocultar ambos mensajes al comenzar
+     chartDescription.style.display = 'none';
+     chartDescriptionOtherGraphics.style.display = 'none';
+ 
+     // Mostrar el mensaje correspondiente según el tipo de gráfico
+     if (chartType === 'pie') {
+         chartDescription.style.display = 'block';
+         chartDescription.innerText = 'Este gráfico muestra el promedio de los datos por atributo.';
+     } else {
+         chartDescriptionOtherGraphics.style.display = 'block';
+         chartDescriptionOtherGraphics.innerText = 'Porfavor pon el cursor sobre el gráfico para ver su contenido de manera detallada.';
+         ;
+     }
 
     if (chart) {
         chart.destroy();
@@ -202,8 +250,8 @@ function generateChart(labels, datasets) {
                 datasets: [{
                     label: 'Diagrama de Cajas',
                     data: boxPlotData,
-                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: generateBrightColors(boxPlotData.length),
+                    borderColor: generateBrightColors(boxPlotData.length),
                     borderWidth: 1
                 }]
             },
@@ -215,6 +263,7 @@ function generateChart(labels, datasets) {
                 }
             }
         });
+        chartDescription.style.display = 'none';
     } else if (chartType === 'pie') {
         // Calcular promedios para el gráfico de pastel
         const averages = labels.map((_, colIndex) => {
@@ -306,24 +355,53 @@ function downloadChart() {
     const tempCanvas = document.createElement('canvas');
     const ctx = tempCanvas.getContext('2d');
 
-    tempCanvas.width = canvas.width;
-    tempCanvas.height = canvas.height + 80; // Espacio adicional para el texto
+    const textPadding = 20;
+    const lineHeight = 25;
+    const canvasWidth = canvas.width + 2 * textPadding;
+
+    // Calcular líneas de texto para el título y la descripción
+    ctx.font = "20px Arial";
+    const titleLines = wrapText(ctx, title, canvasWidth - 2 * textPadding, lineHeight);
+    ctx.font = "14px Arial";
+    const subtitleLines = wrapText(ctx, subtitle, canvasWidth - 2 * textPadding, lineHeight);
+    ctx.font = "12px Arial";
+    const descriptionLines = wrapText(ctx, description, canvasWidth - 2 * textPadding, lineHeight);
+
+    // Ajustar la altura del canvas basada en el número de líneas de texto y el gráfico
+    const canvasHeight = lineHeight * (titleLines.length + subtitleLines.length + descriptionLines.length) + canvas.height + 4 * textPadding;
+
+    tempCanvas.width = canvasWidth;
+    tempCanvas.height = canvasHeight;
+
+    // Añadir fondo blanco al canvas
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
 
     // Dibujar el título y el subtítulo en el canvas temporal
     ctx.fillStyle = "#000";
+    let currentY = textPadding;
     ctx.font = "20px Arial";
-    ctx.fillText(title, 10, 25);
+    titleLines.forEach(line => {
+        ctx.fillText(line, textPadding, currentY);
+        currentY += lineHeight;
+    });
+
     ctx.font = "14px Arial";
-    ctx.fillText(subtitle, 10, 45);
+    subtitleLines.forEach(line => {
+        ctx.fillText(line, textPadding, currentY);
+        currentY += lineHeight;
+    });
 
-    // Dibujar el gráfico existente en el canvas temporal
-    ctx.drawImage(canvas, 0, 60);
+    // Dibujar la descripción
+    ctx.font = "12px Arial";
+    descriptionLines.forEach(line => {
+        ctx.fillText(line, textPadding, currentY);
+        currentY += lineHeight;
+    });
 
-    // Agregar descripción para gráficos de pastel
-    if (description) {
-        ctx.font = "12px Arial";
-        ctx.fillText(description, 10, tempCanvas.height - 20);
-    }
+    // Dibujar el gráfico debajo del texto
+    ctx.drawImage(canvas, textPadding, currentY + textPadding);
 
     // Descargar la imagen como PNG
     const link = document.createElement('a');
@@ -331,6 +409,28 @@ function downloadChart() {
     link.download = 'grafico.png';
     link.click();
 }
+
+// Función para dividir texto largo en líneas
+function wrapText(ctx, text, maxWidth, lineHeight) {
+    const words = text.split(' ');
+    let line = '';
+    const lines = [];
+
+    for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = ctx.measureText(testLine);
+        const testWidth = metrics.width;
+        if (testWidth > maxWidth && n > 0) {
+            lines.push(line);
+            line = words[n] + ' ';
+        } else {
+            line = testLine;
+        }
+    }
+    lines.push(line);
+    return lines;
+}
+
 
 function downloadStatistics() {
     const title = "Medidas Estadísticas";
@@ -347,6 +447,10 @@ function downloadStatistics() {
     // Configurar dimensiones del canvas
     tempCanvas.width = 800;
     tempCanvas.height = 400; // Ajustar para el tamaño necesario
+    
+    // Añadir fondo blanco al canvas
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
 
     // Estilo de texto y encabezados
     ctx.fillStyle = "#000";
@@ -391,57 +495,71 @@ function exportTableAsPNG() {
     const subtitle = document.getElementById('graphSubtitle').value;
     const table = document.getElementById('dataTable');
 
-    // Verificar si el título, la descripción o la tabla han sido modificados
-    const isTitleModified = title.trim() !== '';
-    const isSubtitleModified = subtitle.trim() !== '';
-    const isTableModified = checkIfTableIsModified();
-
-    if (!isTitleModified && !isSubtitleModified && !isTableModified) {
-        alert("Por favor, modifica el título, la descripción o la tabla antes de exportar.");
-        return;
-    }
-
-    // Crear un canvas temporal para incluir texto y tabla
     const tempCanvas = document.createElement('canvas');
     const ctx = tempCanvas.getContext('2d');
-
-    // Ajustar dimensiones del canvas según el contenido
     const canvasWidth = 800;
-    let canvasHeight = 200; // Altura inicial para título y descripción
-
+    const maxWidth = canvasWidth - 40;
+    let canvasHeight = 200;
+    const lines = wrapText(ctx, subtitle, maxWidth, 14);
+    const extraHeight = lines.length * 30;
     const rows = table.getElementsByTagName('tr');
-    canvasHeight += rows.length * 30; // Altura dinámica basada en la cantidad de filas
+    canvasHeight += rows.length * 30;
+    canvasHeight += extraHeight;
 
     tempCanvas.width = canvasWidth;
     tempCanvas.height = canvasHeight;
 
-    // Añadir título y descripción al canvas si están modificados
-    ctx.fillStyle = "#000";
+    // Establecer fondo blanco y el color deseado para las líneas de la tabla en el canvas
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+    ctx.strokeStyle = '#d1cfcf'; // Color de borde de las líneas de la tabla en la imagen
+
+    // Configurar fuente y color del título
     ctx.font = "20px Arial";
-    if (isTitleModified) {
-        ctx.fillText(title, 10, 30);
-    }
-    if (isSubtitleModified) {
-        ctx.font = "14px Arial";
-        ctx.fillText(subtitle, 10, 60);
+    ctx.fillStyle = "#000";
+    ctx.textAlign = "center";
+    ctx.fillText(title, canvasWidth / 2, 30);
+
+    // Dibujar la descripción centrada si está modificada
+    ctx.font = "14px Arial";
+    ctx.textAlign = "left"; // Volver al alineamiento izquierdo para la descripción
+    let currentHeight = 60; // Altura inicial después del título
+    for (const line of lines) {
+        ctx.fillText(line, 10, currentHeight);
+        currentHeight += 30;
     }
 
     // Dibujar la tabla en el canvas
-    let startY = 80; // Punto de inicio para la tabla
+    const startY = currentHeight + 20; // Punto de inicio para la tabla
     const rowHeight = 30; // Altura de cada fila
     const columnWidth = canvasWidth / (rows[0].cells.length - 1); // Ajustar a la cantidad de columnas
 
+    let yPosition = startY;
     for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
         const row = rows[rowIndex];
         for (let cellIndex = 0; cellIndex < row.cells.length - 1; cellIndex++) {
             const cell = row.cells[cellIndex];
-            ctx.strokeStyle = '#ddd';
-            ctx.strokeRect(cellIndex * columnWidth, startY, columnWidth, rowHeight);
+            
+            // Dibujar el fondo de color si es necesario para atributos y etiquetas
+            if (rowIndex === 0 || cellIndex === 0) {
+                ctx.fillStyle = "#d4edda";
+                ctx.fillRect(cellIndex * columnWidth, yPosition, columnWidth, rowHeight);
+                ctx.fillStyle = "#000"; // Cambiar a negro para el texto
+                ctx.font = "bold 14px Arial"; // Negrita para los encabezados
+            } else {
+                ctx.fillStyle = "#000"; // Color estándar para el texto
+                ctx.font = "14px Arial"; // Fuente estándar para el resto
+            }
+            
+            // Dibujar el texto dentro de la celda
             const inputElement = cell.querySelector('input');
-            const cellValue = inputElement ? inputElement.value : ''; // Verificar si existe un input antes de intentar acceder al valor
-            ctx.fillText(cellValue, cellIndex * columnWidth + 10, startY + 20);
+            const cellValue = inputElement ? inputElement.value : '';
+            ctx.fillText(cellValue, cellIndex * columnWidth + 10, yPosition + 20);
+
+            // Dibujar las líneas de las celdas con el color especificado
+            ctx.strokeRect(cellIndex * columnWidth, yPosition, columnWidth, rowHeight);
         }
-        startY += rowHeight;
+        yPosition += rowHeight;
     }
 
     // Descargar la imagen como PNG
@@ -450,6 +568,52 @@ function exportTableAsPNG() {
     link.download = 'tabla_grafico.png';
     link.click();
 }
+
+// Función para dividir el texto en líneas ajustadas al ancho máximo
+function wrapText(ctx, text, maxWidth, fontSize) {
+    ctx.font = `${fontSize}px Arial`;
+    const words = text.split(' ');
+    let line = '';
+    const lines = [];
+
+    for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = ctx.measureText(testLine);
+        const testWidth = metrics.width;
+        if (testWidth > maxWidth && n > 0) {
+            lines.push(line);
+            line = words[n] + ' ';
+        } else {
+            line = testLine;
+        }
+    }
+    lines.push(line);
+    return lines;
+}
+
+
+function clearTableData() {
+    // Confirmación antes de limpiar los datos
+    const confirmClear = confirm("¿Estás seguro que quieres limpiar los datos de la tabla?"); 
+    if (!confirmClear) {
+        return; // Salir si el usuario cancela 
+    }
+
+    const table = document.getElementById('dataTable');
+
+    // Limpiar entradas en el cuerpo de la tabla (etiquetas y valores)
+    const bodyInputs = table.querySelectorAll('tbody input');
+    bodyInputs.forEach(input => {
+        input.value = '';
+    });
+
+    // Limpiar entradas en los encabezados de la tabla (atributos)                             
+    const headerInputs = table.querySelectorAll('thead input');
+    headerInputs.forEach(input => {
+        input.value = '';
+    });
+}
+
 
 // Función para verificar si la tabla ha sido modificada
 function checkIfTableIsModified() {
@@ -469,13 +633,19 @@ function checkIfTableIsModified() {
 }
 
 function displayStatistics(data) {
-    // Filtrar valores no válidos (NaN)
     const validData = data.filter(value => !isNaN(value));
 
     if (validData.length === 0) {
         document.getElementById('mean').innerText = `Media: N/A`;
         document.getElementById('median').innerText = `Mediana: N/A`;
         document.getElementById('mode').innerText = `Moda: N/A`;
+        document.getElementById('quartiles').innerText = `Cuartiles: N/A`;
+        document.getElementById('percentiles').innerText = `Percentiles: N/A`;
+        document.getElementById('range').innerText = `Recorrido: N/A`;
+        document.getElementById('meanDeviation').innerText = `Desviación Media: N/A`;
+        document.getElementById('variance').innerText = `Varianza: N/A`;
+        document.getElementById('stdDeviation').innerText = `Desviación Estándar: N/A`;
+        document.getElementById('coefficientOfVariation').innerText = `Coeficiente de Variación: N/A`;
         return;
     }
 
@@ -483,9 +653,36 @@ function displayStatistics(data) {
     const medianValue = quantile(validData, 0.5).toFixed(2);
     const modeValue = getMode(validData).toString();
 
+    const rangeValue = truncateToTwoDecimals(Math.max(...validData) - Math.min(...validData));
+
+    const meanDeviationValue = calculateMeanDeviation(validData, meanValue);
+
+    // Cuartiles
+    const Q1 = truncateToTwoDecimals(quantile(validData, 0.25));
+    const Q2 = truncateToTwoDecimals(quantile(validData, 0.5)); // Mediana
+    const Q3 = truncateToTwoDecimals(quantile(validData, 0.75));
+
+    // Percentiles
+    const P25 = truncateToTwoDecimals(quantile(validData, 0.25));
+    const P75 = truncateToTwoDecimals(quantile(validData, 0.75));
+
+    // Varianza y desviación estándar
+    const variance = truncateToTwoDecimals(validData.reduce((acc, val) => acc + Math.pow(val - meanValue, 2), 0) / (validData.length - 1));
+    const stdDeviation = truncateToTwoDecimals(Math.sqrt(variance));
+
+    // Coeficiente de variación
+    const coefficientOfVariation = truncateToTwoDecimals((stdDeviation / meanValue) * 100);
+
     document.getElementById('mean').innerText = `Media: ${meanValue}`;
     document.getElementById('median').innerText = `Mediana: ${medianValue}`;
     document.getElementById('mode').innerText = `Moda: ${modeValue}`;
+    document.getElementById('quartiles').innerText = `Cuartiles: Q1=${Q1}, Q2=${Q2}, Q3=${Q3}`;
+    document.getElementById('percentiles').innerText = `Percentiles: P25=${P25}, P75=${P75}`;
+    document.getElementById('range').innerText = `Recorrido: ${rangeValue}`;
+    document.getElementById('meanDeviation').innerText = `Desviación Media: ${meanDeviationValue}`;
+    document.getElementById('variance').innerText = `Varianza: ${variance}`;
+    document.getElementById('stdDeviation').innerText = `Desviación Estándar: ${stdDeviation}`;
+    document.getElementById('coefficientOfVariation').innerText = `Coeficiente de Variación: ${coefficientOfVariation}%`;
 }
 
 function quantile(arr, q) {
@@ -513,7 +710,46 @@ function getMode(arr) {
     return modes;
 }
 
+function calculateMeanDeviation(data, mean) {
+    const absoluteDifferences = data.map(value => Math.abs(value - mean));
+    const sumOfAbsoluteDifferences = absoluteDifferences.reduce((acc, val) => acc + val, 0);
+    const meanDeviation = (sumOfAbsoluteDifferences - mean) / data.length;
+    return truncateToTwoDecimals(meanDeviation);
+}
+
+function truncateToTwoDecimals(value) {
+    return Math.floor(value * 100) / 100;
+}
+
 function showStatisticsModal() {
+    // Verificar que haya al menos dos valores numéricos válidos en la tabla
+    const table = document.getElementById('dataTable');
+    const rows = table.getElementsByTagName('tbody')[0].rows;
+    let validDataCount = 0;
+
+    // Contar los valores numéricos válidos
+    for (let i = 0; i < rows.length; i++) {
+        const cells = rows[i].cells;
+        for (let j = 1; j < cells.length - 1; j++) { // Ignorar el primer y último columna si es necesario
+            const value = cells[j].querySelector('input').value.trim();
+            if (value && !isNaN(value)) {
+                validDataCount++;
+            }
+            if (validDataCount >= 2) {
+                break;
+            }
+        }
+        if (validDataCount >= 2) {
+            break;
+        }
+    }
+
+    // Validación: requiere al menos dos datos válidos
+    if (validDataCount < 2) {
+        alert("Necesitas ingresar al menos dos datos numéricos para mostrar las estadísticas.");
+        return; // Asegura que la ejecución se detenga aquí
+    }
+
     const { sortedData } = getSortedData();
     displaySortedData(sortedData);
     displayStatistics(sortedData.flat());
@@ -554,7 +790,7 @@ function displaySortedData(sortedData) {
     sortedDataBody.innerHTML = '';
 
     // Definir cuántas columnas por fila se mostrarán
-    const columnsPerRow = 4;
+    const columnsPerRow = 9;
     let row = null;
 
     sortedData.forEach((value, index) => {
@@ -570,14 +806,6 @@ function displaySortedData(sortedData) {
         row.appendChild(cell);
     });
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-    // Asegurar que el botón de estadísticas esté correctamente vinculado
-    const statsButton = document.querySelector('button[onclick="showStatisticsModal()"]');
-    if (statsButton) {
-        statsButton.addEventListener('click', showStatisticsModal);
-    }
-});
 
 function selectSingleChart(selectedCheckbox) {
     const checkboxes = document.querySelectorAll('.chart-option');
@@ -596,4 +824,87 @@ function getSelectedChartType() {
         }
     }
     return null; // Si no hay ninguno seleccionado
+}
+
+function showFrequencyModal() {
+    const classCount = parseInt(document.getElementById('classCount').value);
+    if (isNaN(classCount) || classCount < 1) {
+        alert("Por favor, ingresa un número válido de clases.");
+        return;
+    }
+
+    generateFrequencyTable(classCount);
+
+    // Mostrar el modal de distribución de frecuencias
+    document.getElementById('frequencyModal').style.display = 'block';
+    document.getElementById('frequencyModalOverlay').style.display = 'block';
+}
+
+function closeFrequencyModal() {
+    document.getElementById('frequencyModal').style.display = 'none';
+    document.getElementById('frequencyModalOverlay').style.display = 'none';
+}
+
+// Método simplificado para obtener todos los datos en una lista plana desde la tabla
+function getDataFromTableFrecuency() {
+    const data = [];
+    const table = document.getElementById('dataTable');
+    const rows = table.getElementsByTagName('tbody')[0].rows;
+
+    for (let i = 0; i < rows.length; i++) {
+        const cells = rows[i].cells;
+        for (let j = 1; j < cells.length - 1; j++) { // Ignorar primera y última columna
+            const value = cells[j].querySelector('input').value.trim();
+            if (value && !isNaN(value)) {
+                data.push(parseFloat(value));
+            }
+        }
+    }
+    return data;
+}
+
+// Generar la tabla de distribución de frecuencias
+function generateFrequencyTable(classCount) {
+    const data = getDataFromTableFrecuency();
+    const frequencyTableBody = document.getElementById('frequencyTableBody');
+    frequencyTableBody.innerHTML = ''; // Limpiar la tabla previa si existe
+
+    const min = Math.min(...data);
+    const max = Math.max(...data);
+    const amplitude = (max - min) / classCount;
+    document.getElementById('amplitude').innerText = `Amplitud: ${amplitude.toFixed(2)}`;
+
+    let cumulativeFrequencyLess = 0;
+    let cumulativeRelativeLess = 0;
+
+    for (let i = 0; i < classCount; i++) {
+        const lowerLimit = min + i * amplitude;
+        const upperLimit = lowerLimit + amplitude;
+        const midpoint = (lowerLimit + upperLimit) / 2;
+
+        // Calcular la frecuencia absoluta para esta clase
+        const absoluteFrequency = data.filter(value => value >= lowerLimit && value < upperLimit).length;
+        const relativeFrequency = absoluteFrequency / data.length;
+
+        cumulativeFrequencyLess += absoluteFrequency;
+        cumulativeRelativeLess += relativeFrequency;
+
+        // Calcular acumulados "más de" restando los acumulados "menos de"
+        const cumulativeFrequencyMore = data.length - cumulativeFrequencyLess;
+        const cumulativeRelativeMore = 1 - cumulativeRelativeLess;
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${lowerLimit.toFixed(2)} - ${upperLimit.toFixed(2)}</td>
+            <td>${(lowerLimit - 0.5).toFixed(2)} - ${(upperLimit + 0.5).toFixed(2)}</td>
+            <td>${midpoint.toFixed(2)}</td>
+            <td>${absoluteFrequency}</td>
+            <td>${(relativeFrequency * 100).toFixed(2)}%</td>
+            <td>${cumulativeFrequencyLess}</td>
+            <td>${(cumulativeRelativeLess * 100).toFixed(2)}%</td>
+            <td>${cumulativeFrequencyMore}</td>
+            <td>${(cumulativeRelativeMore * 100).toFixed(2)}%</td>
+        `;
+        frequencyTableBody.appendChild(row);
+    }
 }
