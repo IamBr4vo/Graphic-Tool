@@ -109,7 +109,7 @@ function getDataFromTable() {
 }
 
 function getRandomBrightColor(alpha = 1) {
-    const r = Math.floor(Math.random() * 100); // Evitar tonos muy oscuros (rango de 100-255) ****************************************************************************
+    const r = Math.floor(Math.random() * 100); // Evitar tonos muy oscuros (rango de 100-255)
     const g = Math.floor(Math.random() * 100);
     const b = Math.floor(Math.random() * 100);
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
@@ -118,9 +118,50 @@ function getRandomBrightColor(alpha = 1) {
 function generateBrightColors(count) {
     const colors = [];
     for (let i = 0; i < count; i++) {
-        colors.push(getRandomBrightColor(0.8)); // Colores más vivos y variados ***************************************************************************************
+        colors.push(getRandomBrightColor(0.8)); // Colores más vivos y variados 
     }
     return colors;
+}
+
+// Mostrar el campo de número de clases solo cuando se selecciona "Generar Distribución de Frecuencias"
+function showClassCountInput() {
+    const selectedAction = document.getElementById('actionSelect').value;
+    const classCountInput = document.getElementById('classCount');
+
+    if (selectedAction === "generateFrequencyDistribution") {
+        classCountInput.style.display = 'inline-block';
+    } else {
+        classCountInput.style.display = 'none';
+    }
+}
+
+function executeSelectedAction() {
+    const selectedAction = document.getElementById('actionSelect').value;
+    const classCountInput = document.getElementById('classCount');
+
+    // Ejecutar la acción seleccionada al hacer clic en "Generar"
+    switch (selectedAction) {
+        case "generateChart":
+            showModal();
+            break;
+        case "generateStatistics":
+            showStatisticsModal();
+            break;
+        case "exportTable":
+            exportTableAsPNG();
+            break;
+        case "generateFrequencyDistribution":
+            // Validar si el número de clases está ingresado
+            const classCount = parseInt(classCountInput.value);
+            if (isNaN(classCount) || classCount < 1) {
+                alert("Por favor, ingresa un número válido de clases.");
+                return;
+            }
+            showFrequencyModal();
+            break;
+        default:
+            alert("Por favor, selecciona una acción válida.");
+    }
 }
 
 function showModal() {

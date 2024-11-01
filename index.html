@@ -98,14 +98,31 @@
             </table>
         </div>
 
-        <!-- Botones de Control Inferiores -->
-        <div class="d-flex justify-content-between mt-3">
-            <div>
-                <button class="btn btn-primary btn-lg btn-sm mx-1 mb-3" onclick="showModal()">Generar Gráfico</button>
-                <button class="btn btn-primary btn-lg btn-sm mx-1 mb-3" onclick="showStatisticsModal()">Generar Medidas
-                    Estadísticas</button>
-                <button class="btn btn-success btn-lg btn-sm mx-1 mb-3" onclick="exportTableAsPNG()">Exportar Tabla como
-                    PNG</button>
+        <!-- Contenedor de Selección de Acción con Combobox, Campo de Clases, y Botón Generar -->
+        <div class="mb-3">
+            <label for="actionSelect" class="form-label mb-2 mt-5">Selecciona una acción</label>
+            <div class="d-flex align-items-baseline">
+                <!-- Combobox de acciones -->
+                <select id="actionSelect" class="form-select" style="width: 350px;" onchange="showClassCountInput()">
+                    <option value="generateChart">Generar Gráfico</option>
+                    <option value="generateStatistics">Generar Medidas Estadísticas</option>
+                    <option value="generateFrequencyDistribution">Generar Distribución de Frecuencias</option>
+                    <option value="exportTable">Exportar Tabla como PNG</option>
+                </select>
+
+                <!-- Campo para número de clases (oculto inicialmente) -->
+                <input type="number" id="classCount" class="form-control ms-2" placeholder="Número de clases"
+                    style="display: none; width: 190px;">
+
+                <!-- Botón para ejecutar la acción seleccionada -->
+                <button class="btn btn-success btn-lg ms-2" onclick="executeSelectedAction()">Generar</button>
+            </div>
+        </div>
+
+        <!-- Contenedor adicional para ajustar la posición -->
+        <div style="position: relative; top: -150px;">
+            <!-- Botones de Control Inferiores -->
+            <div class="d-flex justify-content-end align-items-end">
                 <button class="btn btn-success btn-lg btn-sm mx-1 mb-3" onclick="clearTableData()">Limpiar
                     Tabla</button>
             </div>
@@ -160,12 +177,6 @@
             <hr>
             <button class="btn btn-primary btn-lg btn-sm mx-1 mt-4" onclick="downloadStatistics()">Descargar Medidas
                 Estadísticas como PNG</button>
-        </div>
-
-        <div>
-            <input type="number" id="classCount" placeholder="Número de clases" min="1" class="input-small">
-            <button class="btn btn-primary btn-lg btn-sm mx-1 mb-3" onclick="showFrequencyModal()">Generar Distribución
-                de Frecuencias</button>
         </div>
 
         <!-- Modal para Distribución de Frecuencias -->
