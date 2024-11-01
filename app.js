@@ -92,7 +92,7 @@ function getDataFromTable() {
         if (datasetLabel) {
             for (let j = 1; j < cells.length - 1; j++) {
                 const value = cells[j].querySelector('input').value;
-                    datasetData.push(parseFloat(value));
+                datasetData.push(parseFloat(value));
             }
 
             datasets.push({
@@ -158,7 +158,7 @@ function showModal() {
         alert("Necesitas ingresar mínimo un atributo, una etiqueta y un valor para poder graficar.");
         return;
     }
-    
+
     const { labels, datasets } = getDataFromTable();
     generateChart(labels, datasets);
 
@@ -189,19 +189,19 @@ function generateChart(labels, datasets) {
         return;
     }
 
-     // Ocultar ambos mensajes al comenzar
-     chartDescription.style.display = 'none';
-     chartDescriptionOtherGraphics.style.display = 'none';
- 
-     // Mostrar el mensaje correspondiente según el tipo de gráfico
-     if (chartType === 'pie') {
-         chartDescription.style.display = 'block';
-         chartDescription.innerText = 'Este gráfico muestra el promedio de los datos por atributo.';
-     } else {
-         chartDescriptionOtherGraphics.style.display = 'block';
-         chartDescriptionOtherGraphics.innerText = 'Porfavor pon el cursor sobre el gráfico para ver su contenido de manera detallada.';
-         ;
-     }
+    // Ocultar ambos mensajes al comenzar
+    chartDescription.style.display = 'none';
+    chartDescriptionOtherGraphics.style.display = 'none';
+
+    // Mostrar el mensaje correspondiente según el tipo de gráfico
+    if (chartType === 'pie') {
+        chartDescription.style.display = 'block';
+        chartDescription.innerText = 'Este gráfico muestra el promedio de los datos por atributo.';
+    } else {
+        chartDescriptionOtherGraphics.style.display = 'block';
+        chartDescriptionOtherGraphics.innerText = 'Porfavor pon el cursor sobre el gráfico para ver su contenido de manera detallada.';
+        ;
+    }
 
     if (chart) {
         chart.destroy();
@@ -447,7 +447,7 @@ function downloadStatistics() {
     // Configurar dimensiones del canvas
     tempCanvas.width = 800;
     tempCanvas.height = 400; // Ajustar para el tamaño necesario
-    
+
     // Añadir fondo blanco al canvas
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
@@ -539,7 +539,7 @@ function exportTableAsPNG() {
         const row = rows[rowIndex];
         for (let cellIndex = 0; cellIndex < row.cells.length - 1; cellIndex++) {
             const cell = row.cells[cellIndex];
-            
+
             // Dibujar el fondo de color si es necesario para atributos y etiquetas
             if (rowIndex === 0 || cellIndex === 0) {
                 ctx.fillStyle = "#d4edda";
@@ -550,7 +550,7 @@ function exportTableAsPNG() {
                 ctx.fillStyle = "#000"; // Color estándar para el texto
                 ctx.font = "14px Arial"; // Fuente estándar para el resto
             }
-            
+
             // Dibujar el texto dentro de la celda
             const inputElement = cell.querySelector('input');
             const cellValue = inputElement ? inputElement.value : '';
@@ -594,7 +594,7 @@ function wrapText(ctx, text, maxWidth, fontSize) {
 
 function clearTableData() {
     // Confirmación antes de limpiar los datos
-    const confirmClear = confirm("¿Estás seguro que quieres limpiar los datos de la tabla?"); 
+    const confirmClear = confirm("¿Estás seguro que quieres limpiar los datos de la tabla?");
     if (!confirmClear) {
         return; // Salir si el usuario cancela 
     }
@@ -863,48 +863,90 @@ function getDataFromTableFrecuency() {
     return data;
 }
 
-// Generar la tabla de distribución de frecuencias
+
 function generateFrequencyTable(classCount) {
     const data = getDataFromTableFrecuency();
     const frequencyTableBody = document.getElementById('frequencyTableBody');
-    frequencyTableBody.innerHTML = ''; // Limpiar la tabla previa si existe
+    frequencyTableBody.innerHTML = ''; // Clear any previous table
 
     const min = Math.min(...data);
     const max = Math.max(...data);
-    const amplitude = (max - min) / classCount;
+    const amplitude = max - min;
+    const intervalo = amplitude / classCount;
     document.getElementById('amplitude').innerText = `Amplitud: ${amplitude.toFixed(2)}`;
+    document.getElementById('intervalo').innerText = `Intervalo de Clase: ${intervalo.toFixed(2)}`;
 
     let cumulativeFrequencyLess = 0;
     let cumulativeRelativeLess = 0;
+    let totalAbsoluteFrequency = 0;
+    let totalRelativeFrequency = 0; // To track the sum of Frecuencia Relativa (%)
+
+    // Calculate total absolute frequency for "más de" calculations
+    const totalFrequency = data.length;
+    let cumulativeFrequencyMore = totalFrequency;
+    let cumulativeRelativeMore = 100; // Start with 100% for cumulative relative "más de"
 
     for (let i = 0; i < classCount; i++) {
-        const lowerLimit = min + i * amplitude;
-        const upperLimit = lowerLimit + amplitude;
-        const midpoint = (lowerLimit + upperLimit) / 2;
+        // Calculate corrected Límites Indicados
+        const lowerLimitIndicated = min + i * intervalo;
+        const upperLimitIndicated = i === classCount - 1 ? max : lowerLimitIndicated + intervalo - 1;
 
-        // Calcular la frecuencia absoluta para esta clase
-        const absoluteFrequency = data.filter(value => value >= lowerLimit && value < upperLimit).length;
-        const relativeFrequency = absoluteFrequency / data.length;
+        // Calculate Límites Reales
+        const lowerLimitReal = lowerLimitIndicated - 0.5;
+        const upperLimitReal = upperLimitIndicated + 0.5;
 
+        // Calculate Puntos Medios (Xi)
+        const midpoint = (lowerLimitIndicated + upperLimitIndicated) / 2;
+
+        // Calculate Frecuencia Absoluta (Fi) by counting values within Límites Indicados, ignoring decimals
+        const absoluteFrequency = data.filter(value => 
+            Math.floor(value) >= Math.floor(lowerLimitIndicated) && Math.floor(value) <= Math.floor(upperLimitIndicated)
+        ).length;
+
+        totalAbsoluteFrequency += absoluteFrequency;
+
+        // Calculate Frecuencia Relativa (%)
+        const relativeFrequency = (absoluteFrequency / totalFrequency) * 100;
+        totalRelativeFrequency += relativeFrequency; // Accumulate for total row
+
+        // Calculate ACUM "menos de" for Absoluta and Relativa
         cumulativeFrequencyLess += absoluteFrequency;
         cumulativeRelativeLess += relativeFrequency;
 
-        // Calcular acumulados "más de" restando los acumulados "menos de"
-        const cumulativeFrequencyMore = data.length - cumulativeFrequencyLess;
-        const cumulativeRelativeMore = 1 - cumulativeRelativeLess;
+        // Calculate ACUM "más de" for Absoluta and Relativa by decrementing
+        const cumulativeFrequencyMoreRow = cumulativeFrequencyMore;
+        const cumulativeRelativeMoreRow = cumulativeRelativeMore;
+        cumulativeFrequencyMore -= absoluteFrequency;
+        cumulativeRelativeMore -= relativeFrequency;
 
+        // Add row for this class
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${lowerLimit.toFixed(2)} - ${upperLimit.toFixed(2)}</td>
-            <td>${(lowerLimit - 0.5).toFixed(2)} - ${(upperLimit + 0.5).toFixed(2)}</td>
+            <td>${lowerLimitIndicated.toFixed(2)} - ${upperLimitIndicated.toFixed(2)}</td>
+            <td>${lowerLimitReal.toFixed(2)} - ${upperLimitReal.toFixed(2)}</td>
             <td>${midpoint.toFixed(2)}</td>
             <td>${absoluteFrequency}</td>
-            <td>${(relativeFrequency * 100).toFixed(2)}%</td>
+            <td>${relativeFrequency.toFixed(2)}%</td>
             <td>${cumulativeFrequencyLess}</td>
-            <td>${(cumulativeRelativeLess * 100).toFixed(2)}%</td>
-            <td>${cumulativeFrequencyMore}</td>
-            <td>${(cumulativeRelativeMore * 100).toFixed(2)}%</td>
+            <td>${cumulativeRelativeLess.toFixed(2)}%</td>
+            <td>${cumulativeFrequencyMoreRow}</td>
+            <td>${cumulativeRelativeMoreRow.toFixed(2)}%</td>
         `;
         frequencyTableBody.appendChild(row);
     }
+
+    // Add total row at the end of the table
+    const totalRow = document.createElement('tr');
+    totalRow.innerHTML = `
+        <td colspan="1"><strong></strong></td>
+        <td colspan="1"><strong></strong></td>
+        <td colspan="1"><strong>Total</strong></td>
+        <td><strong>${totalAbsoluteFrequency}</strong></td>
+        <td><strong>${totalRelativeFrequency.toFixed(2)}%</strong></td>
+        <td colspan="1"><strong></strong></td>
+        <td colspan="1"><strong></strong></td>
+        <td colspan="1"><strong></strong></td>
+        <td colspan="1"><strong></strong></td>
+    `;
+    frequencyTableBody.appendChild(totalRow);
 }

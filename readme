@@ -1,4 +1,4 @@
-Comandos en la terminal:
+Comandos en la terminal para crear el .exe (debes tener node.js instalado):
 
 npm install
 npm run dist
