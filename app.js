@@ -682,7 +682,6 @@ function displayStatistics(data) {
         document.getElementById('mode').innerText = `Moda: N/A`;
         document.getElementById('quartiles').innerText = `Cuartiles: N/A`;
         document.getElementById('percentiles').innerText = `Percentiles: N/A`;
-        document.getElementById('range').innerText = `Recorrido: N/A`;
         document.getElementById('meanDeviation').innerText = `Desviación Media: N/A`;
         document.getElementById('variance').innerText = `Varianza: N/A`;
         document.getElementById('stdDeviation').innerText = `Desviación Estándar: N/A`;
@@ -719,7 +718,6 @@ function displayStatistics(data) {
     document.getElementById('mode').innerText = `Moda: ${modeValue}`;
     document.getElementById('quartiles').innerText = `Cuartiles: Q1=${Q1}, Q2=${Q2}, Q3=${Q3}`;
     document.getElementById('percentiles').innerText = `Percentiles: P25=${P25}, P75=${P75}`;
-    document.getElementById('range').innerText = `Recorrido: ${rangeValue}`;
     document.getElementById('meanDeviation').innerText = `Desviación Media: ${meanDeviationValue}`;
     document.getElementById('variance').innerText = `Varianza: ${variance}`;
     document.getElementById('stdDeviation').innerText = `Desviación Estándar: ${stdDeviation}`;
@@ -831,7 +829,7 @@ function displaySortedData(sortedData) {
     sortedDataBody.innerHTML = '';
 
     // Definir cuántas columnas por fila se mostrarán
-    const columnsPerRow = 9;
+    const columnsPerRow = 10;
     let row = null;
 
     sortedData.forEach((value, index) => {
@@ -908,59 +906,60 @@ function getDataFromTableFrecuency() {
 function generateFrequencyTable(classCount) {
     const data = getDataFromTableFrecuency();
     const frequencyTableBody = document.getElementById('frequencyTableBody');
-    frequencyTableBody.innerHTML = ''; // Clear any previous table
+    frequencyTableBody.innerHTML = ''; // Limpiar la tabla anterior
 
     const min = Math.min(...data);
     const max = Math.max(...data);
     const amplitude = max - min;
-    const intervalo = amplitude / classCount;
+    const intervalo = parseFloat((amplitude / classCount).toFixed(2));
     document.getElementById('amplitude').innerText = `Amplitud: ${amplitude.toFixed(2)}`;
     document.getElementById('intervalo').innerText = `Intervalo de Clase: ${intervalo.toFixed(2)}`;
 
     let cumulativeFrequencyLess = 0;
     let cumulativeRelativeLess = 0;
     let totalAbsoluteFrequency = 0;
-    let totalRelativeFrequency = 0; // To track the sum of Frecuencia Relativa (%)
+    let totalRelativeFrequency = 0;
 
-    // Calculate total absolute frequency for "más de" calculations
+    // Variables para las sumatorias necesarias para calcular varianza y desviación estándar
+    let sumXiFi = 0;
+    let sumXiSquareFi = 0;
+
     const totalFrequency = data.length;
     let cumulativeFrequencyMore = totalFrequency;
-    let cumulativeRelativeMore = 100; // Start with 100% for cumulative relative "más de"
+    let cumulativeRelativeMore = 100;
 
     for (let i = 0; i < classCount; i++) {
-        // Calculate corrected Límites Indicados
         const lowerLimitIndicated = min + i * intervalo;
         const upperLimitIndicated = i === classCount - 1 ? max : lowerLimitIndicated + intervalo - 1;
-
-        // Calculate Límites Reales
         const lowerLimitReal = lowerLimitIndicated - 0.5;
         const upperLimitReal = upperLimitIndicated + 0.5;
 
-        // Calculate Puntos Medios (Xi)
+        // Punto Medio (Xi)
         const midpoint = (lowerLimitIndicated + upperLimitIndicated) / 2;
 
-        // Calculate Frecuencia Absoluta (Fi) by counting values within Límites Indicados, ignoring decimals
-        const absoluteFrequency = data.filter(value => 
+        // Frecuencia Absoluta (Fi)
+        const absoluteFrequency = data.filter(value =>
             Math.floor(value) >= Math.floor(lowerLimitIndicated) && Math.floor(value) <= Math.floor(upperLimitIndicated)
         ).length;
-
         totalAbsoluteFrequency += absoluteFrequency;
 
-        // Calculate Frecuencia Relativa (%)
+        // Frecuencia Relativa (%)
         const relativeFrequency = (absoluteFrequency / totalFrequency) * 100;
-        totalRelativeFrequency += relativeFrequency; // Accumulate for total row
+        totalRelativeFrequency += relativeFrequency;
 
-        // Calculate ACUM "menos de" for Absoluta and Relativa
+        // Acumulativos "menos de" y "más de" para Absoluta y Relativa
         cumulativeFrequencyLess += absoluteFrequency;
         cumulativeRelativeLess += relativeFrequency;
-
-        // Calculate ACUM "más de" for Absoluta and Relativa by decrementing
         const cumulativeFrequencyMoreRow = cumulativeFrequencyMore;
         const cumulativeRelativeMoreRow = cumulativeRelativeMore;
         cumulativeFrequencyMore -= absoluteFrequency;
         cumulativeRelativeMore -= relativeFrequency;
 
-        // Add row for this class
+        // Sumatorias para varianza y desviación estándar
+        sumXiFi += midpoint * absoluteFrequency;
+        sumXiSquareFi += Math.pow(midpoint, 2) * absoluteFrequency;
+
+        // Agregar fila a la tabla
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${lowerLimitIndicated.toFixed(2)} - ${upperLimitIndicated.toFixed(2)}</td>
@@ -976,7 +975,31 @@ function generateFrequencyTable(classCount) {
         frequencyTableBody.appendChild(row);
     }
 
-    // Add total row at the end of the table
+    // Cálculo de la media aritmética
+    const validData = data.filter(value => !isNaN(value));
+    const meanValue = (validData.reduce((acc, val) => acc + val, 0) / validData.length).toFixed(2);
+
+    // Cálculo de la varianza
+    const variance = (sumXiSquareFi - (Math.pow(sumXiFi, 2) / totalAbsoluteFrequency)) / (totalAbsoluteFrequency - 1);
+
+    // Cálculo de la desviación estándar
+    const stdDeviation = Math.sqrt(variance);
+
+    // Cálculo del coeficiente de variación
+    const coefficientOfVariation = (stdDeviation / meanValue) * 100;
+
+    // Mostrar resultados de las estadísticas en el modal de distribución de frecuencias
+    document.getElementById('meanFrec').innerText = `Media Aritmética: ${meanValue}`;
+
+    document.getElementById('sumXiFi').innerText = `Sumatoria Absoluta + Medios: ${sumXiFi}`;
+    document.getElementById('sumXiSquareFi').innerText = `Sumatoria Absoluta + Medios a la 2: ${sumXiSquareFi}`;
+    
+    document.getElementById('meanDeviationFrec').innerText = `Desviación Media: ${stdDeviation.toFixed(2)}`;
+    document.getElementById('varianceFrec').innerText = `Varianza: ${variance.toFixed(2)}`;
+    document.getElementById('stdDeviationFrec').innerText = `Desviación Estándar: ${stdDeviation.toFixed(2)}`;
+    document.getElementById('coefficientOfVariationFrec').innerText = `Coeficiente de Variación: ${coefficientOfVariation.toFixed(2)}%`;
+
+    // Agregar fila de totales a la tabla
     const totalRow = document.createElement('tr');
     totalRow.innerHTML = `
         <td colspan="1"><strong></strong></td>
