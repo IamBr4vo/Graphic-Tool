@@ -139,7 +139,6 @@ function executeSelectedAction() {
     const selectedAction = document.getElementById('actionSelect').value;
     const classCountInput = document.getElementById('classCount');
 
-    // Ejecutar la acción seleccionada al hacer clic en "Generar"
     switch (selectedAction) {
         case "generateChart":
             showModal();
@@ -157,7 +156,12 @@ function executeSelectedAction() {
                 alert("Por favor, ingresa un número válido de clases.");
                 return;
             }
-            showFrequencyModal();
+
+            // Actualizar el texto del encabezado con el número de clases ingresado
+            document.getElementById('classCountDisplay').innerText = classCount;
+
+            // Mostrar el modal combinado
+            showCombinedModal();
             break;
         default:
             alert("Por favor, selecciona una acción válida.");
@@ -240,7 +244,7 @@ function generateChart(labels, datasets) {
         chartDescription.innerText = 'Este gráfico muestra el promedio de los datos por atributo.';
     } else {
         chartDescriptionOtherGraphics.style.display = 'block';
-        chartDescriptionOtherGraphics.innerText = 'Porfavor pon el cursor sobre el gráfico para ver su contenido de manera detallada.';
+        chartDescriptionOtherGraphics.innerText = 'Porfavor pon el cursor sobre el gráfico para ver los valores de manera detallada.';
         ;
     }
 
@@ -531,6 +535,17 @@ function downloadStatistics() {
     link.click();
 }
 
+function downloadStatisticsCombined() {
+    const captureElement = document.getElementById('captureArea');
+
+    html2canvas(captureElement, { scale: 2 }).then((canvas) => {
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = 'estadisticas_completas.png';
+        link.click();
+    });
+}
+
 function exportTableAsPNG() {
     const title = document.getElementById('graphTitle').value;
     const subtitle = document.getElementById('graphSubtitle').value;
@@ -673,6 +688,9 @@ function checkIfTableIsModified() {
     return false;
 }
 
+
+
+
 function displayStatistics(data) {
     const validData = data.filter(value => !isNaN(value));
 
@@ -693,35 +711,20 @@ function displayStatistics(data) {
     const medianValue = quantile(validData, 0.5).toFixed(2);
     const modeValue = getMode(validData).toString();
 
-    const rangeValue = truncateToTwoDecimals(Math.max(...validData) - Math.min(...validData));
-
-    const meanDeviationValue = calculateMeanDeviation(validData, meanValue);
-
     // Cuartiles
-    const Q1 = truncateToTwoDecimals(quantile(validData, 0.25));
-    const Q2 = truncateToTwoDecimals(quantile(validData, 0.5)); // Mediana
-    const Q3 = truncateToTwoDecimals(quantile(validData, 0.75));
+    const Q1 = quantile(validData, 0.25);
+    const Q2 = quantile(validData, 0.5); // Mediana
+    const Q3 = quantile(validData, 0.75);
 
     // Percentiles
-    const P25 = truncateToTwoDecimals(quantile(validData, 0.25));
-    const P75 = truncateToTwoDecimals(quantile(validData, 0.75));
-
-    // Varianza y desviación estándar
-    const variance = truncateToTwoDecimals(validData.reduce((acc, val) => acc + Math.pow(val - meanValue, 2), 0) / (validData.length - 1));
-    const stdDeviation = truncateToTwoDecimals(Math.sqrt(variance));
-
-    // Coeficiente de variación
-    const coefficientOfVariation = truncateToTwoDecimals((stdDeviation / meanValue) * 100);
+    const P25 = quantile(validData, 0.25);
+    const P75 = quantile(validData, 0.75);
 
     document.getElementById('mean').innerText = `Media: ${meanValue}`;
     document.getElementById('median').innerText = `Mediana: ${medianValue}`;
     document.getElementById('mode').innerText = `Moda: ${modeValue}`;
     document.getElementById('quartiles').innerText = `Cuartiles: Q1=${Q1}, Q2=${Q2}, Q3=${Q3}`;
     document.getElementById('percentiles').innerText = `Percentiles: P25=${P25}, P75=${P75}`;
-    document.getElementById('meanDeviation').innerText = `Desviación Media: ${meanDeviationValue}`;
-    document.getElementById('variance').innerText = `Varianza: ${variance}`;
-    document.getElementById('stdDeviation').innerText = `Desviación Estándar: ${stdDeviation}`;
-    document.getElementById('coefficientOfVariation').innerText = `Coeficiente de Variación: ${coefficientOfVariation}%`;
 }
 
 function quantile(arr, q) {
@@ -754,10 +757,6 @@ function calculateMeanDeviation(data, mean) {
     const sumOfAbsoluteDifferences = absoluteDifferences.reduce((acc, val) => acc + val, 0);
     const meanDeviation = (sumOfAbsoluteDifferences - mean) / data.length;
     return truncateToTwoDecimals(meanDeviation);
-}
-
-function truncateToTwoDecimals(value) {
-    return Math.floor(value * 100) / 100;
 }
 
 function showStatisticsModal() {
@@ -846,6 +845,31 @@ function displaySortedData(sortedData) {
     });
 }
 
+function displaySortedData(sortedData) {
+    const sortedDataBody = document.getElementById('sortedDataBody');
+    sortedDataBody.innerHTML = '';
+
+    // Definir cuántas columnas por fila se mostrarán
+    const columnsPerRow = 10;
+    let row = null;
+
+    sortedData.forEach((value, index) => {
+        // Crear una nueva fila si el índice es múltiplo de 'columnsPerRow'
+        if (index % columnsPerRow === 0) {
+            row = document.createElement('tr');
+            sortedDataBody.appendChild(row);
+        }
+
+        // Crear y añadir celdas a la fila actual
+        const cell = document.createElement('td');
+        cell.textContent = value;
+        row.appendChild(cell);
+    });
+}
+
+
+
+
 function selectSingleChart(selectedCheckbox) {
     const checkboxes = document.querySelectorAll('.chart-option');
     checkboxes.forEach(checkbox => {
@@ -865,7 +889,45 @@ function getSelectedChartType() {
     return null; // Si no hay ninguno seleccionado
 }
 
-function showFrequencyModal() {
+
+
+
+function closeCombinedModal() {
+    document.getElementById('combinedModal').style.display = 'none';
+    document.getElementById('combinedModalOverlay').style.display = 'none';
+}
+
+function showCombinedModal() {
+    // Verificar que haya al menos dos valores numéricos válidos en la tabla
+    const table = document.getElementById('dataTable');
+    const rows = table.getElementsByTagName('tbody')[0].rows;
+    let validDataCount = 0;
+
+    for (let i = 0; i < rows.length; i++) {
+        const cells = rows[i].cells;
+        for (let j = 1; j < cells.length - 1; j++) {
+            const value = cells[j].querySelector('input').value.trim();
+            if (value && !isNaN(value)) {
+                validDataCount++;
+            }
+            if (validDataCount >= 2) {
+                break;
+            }
+        }
+        if (validDataCount >= 2) {
+            break;
+        }
+    }
+
+    if (validDataCount < 2) {
+        alert("Necesitas ingresar al menos dos datos numéricos para mostrar las estadísticas.");
+        return;
+    }
+
+    const { sortedData } = getSortedData();
+    displaySortedDataCombined(sortedData);
+    displayStatisticsCombined(sortedData.flat());
+
     const classCount = parseInt(document.getElementById('classCount').value);
     if (isNaN(classCount) || classCount < 1) {
         alert("Por favor, ingresa un número válido de clases.");
@@ -874,15 +936,60 @@ function showFrequencyModal() {
 
     generateFrequencyTable(classCount);
 
-    // Mostrar el modal de distribución de frecuencias
-    document.getElementById('frequencyModal').style.display = 'block';
-    document.getElementById('frequencyModalOverlay').style.display = 'block';
+    document.getElementById('combinedModal').style.display = 'block';
+    document.getElementById('combinedModalOverlay').style.display = 'block';
 }
 
-function closeFrequencyModal() {
-    document.getElementById('frequencyModal').style.display = 'none';
-    document.getElementById('frequencyModalOverlay').style.display = 'none';
+function displaySortedDataCombined(sortedData) {
+    const sortedDataBody = document.getElementById('sortedDataBodyCombined');
+    sortedDataBody.innerHTML = '';
+
+    // Definir cuántas columnas por fila se mostrarán
+    const columnsPerRow = 10;
+    let row = null;
+
+    sortedData.forEach((value, index) => {
+        // Crear una nueva fila si el índice es múltiplo de 'columnsPerRow'
+        if (index % columnsPerRow === 0) {
+            row = document.createElement('tr');
+            sortedDataBody.appendChild(row);
+        }
+
+        // Crear y añadir celdas a la fila actual
+        const cell = document.createElement('td');
+        cell.textContent = value;
+        row.appendChild(cell);
+    });
 }
+
+function displayStatisticsCombined(data) {
+    const validData = data.filter(value => !isNaN(value));
+    if (validData.length === 0) {
+        document.getElementById('mean').innerText = `Media: N/A`;
+        document.getElementById('median').innerText = `Mediana: N/A`;
+        document.getElementById('mode').innerText = `Moda: N/A`;
+        document.getElementById('quartiles').innerText = `Cuartiles: N/A`;
+        document.getElementById('percentiles').innerText = `Percentiles: N/A`;
+        return;
+    }
+
+    const meanValue = (validData.reduce((acc, val) => acc + val, 0) / validData.length).toFixed(2);
+    const medianValue = quantile(validData, 0.5).toFixed(2);
+    const modeValue = getMode(validData).toString();
+
+    const Q1 = quantile(validData, 0.25).toFixed(2);
+    const Q2 = quantile(validData, 0.5).toFixed(2);
+    const Q3 = quantile(validData, 0.75).toFixed(2);
+
+    const P25 = quantile(validData, 0.25).toFixed(2);
+    const P75 = quantile(validData, 0.75).toFixed(2);
+
+    document.getElementById('medianFrec').innerText = `Mediana: ${medianValue}`;
+    document.getElementById('modeFrec').innerText = `Moda: ${modeValue}`;
+    document.getElementById('quartilesFrec').innerText = `Cuartiles: Q1=${Q1}, Q2=${Q2}, Q3=${Q3}`;
+    document.getElementById('percentilesFrec').innerText = `Percentiles: P25=${P25}, P75=${P75}`;
+}
+
 
 // Método simplificado para obtener todos los datos en una lista plana desde la tabla
 function getDataFromTableFrecuency() {
@@ -901,7 +1008,6 @@ function getDataFromTableFrecuency() {
     }
     return data;
 }
-
 
 function generateFrequencyTable(classCount) {
     const data = getDataFromTableFrecuency();
@@ -935,7 +1041,7 @@ function generateFrequencyTable(classCount) {
         const upperLimitReal = upperLimitIndicated + 0.5;
 
         // Punto Medio (Xi)
-        const midpoint = (lowerLimitIndicated + upperLimitIndicated) / 2;
+        const midpoint = truncateToTwoDecimals((lowerLimitIndicated + upperLimitIndicated) / 2);
 
         // Frecuencia Absoluta (Fi)
         const absoluteFrequency = data.filter(value =>
@@ -957,7 +1063,7 @@ function generateFrequencyTable(classCount) {
 
         // Sumatorias para varianza y desviación estándar
         sumXiFi += midpoint * absoluteFrequency;
-        sumXiSquareFi += Math.pow(midpoint, 2) * absoluteFrequency;
+        sumXiSquareFi += truncateToTwoDecimals(Math.pow(midpoint, 2)) * absoluteFrequency;
 
         // Agregar fila a la tabla
         const row = document.createElement('tr');
@@ -983,19 +1089,16 @@ function generateFrequencyTable(classCount) {
     const variance = (sumXiSquareFi - (Math.pow(sumXiFi, 2) / totalAbsoluteFrequency)) / (totalAbsoluteFrequency - 1);
 
     // Cálculo de la desviación estándar
-    const stdDeviation = Math.sqrt(variance);
+    const stdDeviation = truncateToTwoDecimals(Math.sqrt(variance));
 
     // Cálculo del coeficiente de variación
     const coefficientOfVariation = (stdDeviation / meanValue) * 100;
 
     // Mostrar resultados de las estadísticas en el modal de distribución de frecuencias
     document.getElementById('meanFrec').innerText = `Media Aritmética: ${meanValue}`;
-
-    document.getElementById('sumXiFi').innerText = `Sumatoria Absoluta + Medios: ${sumXiFi}`;
-    document.getElementById('sumXiSquareFi').innerText = `Sumatoria Absoluta + Medios a la 2: ${sumXiSquareFi}`;
-    
-    document.getElementById('meanDeviationFrec').innerText = `Desviación Media: ${stdDeviation.toFixed(2)}`;
-    document.getElementById('varianceFrec').innerText = `Varianza: ${variance.toFixed(2)}`;
+    document.getElementById('sumXiFi').innerText = `Sumatoria XiFi: ${sumXiFi.toFixed(2)}`;
+    document.getElementById('sumXiSquareFi').innerText = `Sumatoria Xi^2Fi: ${sumXiSquareFi.toFixed(2)}`;
+    document.getElementById('varianceFrec').innerText = `Varianza: ${variance}`;
     document.getElementById('stdDeviationFrec').innerText = `Desviación Estándar: ${stdDeviation.toFixed(2)}`;
     document.getElementById('coefficientOfVariationFrec').innerText = `Coeficiente de Variación: ${coefficientOfVariation.toFixed(2)}%`;
 
@@ -1013,4 +1116,10 @@ function generateFrequencyTable(classCount) {
         <td colspan="1"><strong></strong></td>
     `;
     frequencyTableBody.appendChild(totalRow);
+}
+
+
+// Función para truncar a dos decimales sin redondear
+function truncateToTwoDecimals(num) {
+    return Math.floor(num * 100) / 100;
 }

@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 
 <body>
@@ -105,8 +105,8 @@
                 <!-- Combobox de acciones -->
                 <select id="actionSelect" class="form-select" style="width: 350px;" onchange="showClassCountInput()">
                     <option value="generateChart">Generar Gráfico</option>
-                    <option value="generateStatistics">Generar Medidas Estadísticas</option>
-                    <option value="generateFrequencyDistribution">Generar Distribución de Frecuencias</option>
+                    <option value="generateStatistics">Generar Tabla Estadística Rápida</option>
+                    <option value="generateFrequencyDistribution">Generar Tabla Estadistica Completa</option>
                     <option value="exportTable">Exportar Tabla como PNG</option>
                 </select>
 
@@ -137,7 +137,7 @@
             <canvas id="chartCanvas"></canvas>
             <p id="chartDescription" style="display: none; font-style: italic; margin-top: 10px;"></p>
             <p id="chartDescriptionOtherGraphics" style="display: none; font-style: italic; margin-top: 10px;"></p>
-            <button class="btn btn-primary btn-lg mx-1 mt-4" onclick="downloadChart()">Descargar Gráfico como
+            <button class="btn btn-primary btn-lg mx-1 mt-4" onclick="downloadChart()">Exportar Gráfico como
                 PNG</button>
         </div>
 
@@ -149,69 +149,100 @@
             <i class="fas fa-boxes chart-box-deco"></i>
         </div>
 
-        <!-- Modal para mostrar las medidas estadísticas -->
+        <!-- Modal para mostrar la tabla estadistica rapida -->
         <div class="modal-overlay" id="statsModalOverlay"></div>
         <div class="modal" id="statsModal">
             <button class="btn btn-danger btn-lg btn-sm mx-1 close-modal"
                 onclick="closeStatisticsModal()">Volver</button>
-            <h3>Medidas Estadísticas</h3>
-            <h5>Tabla con los datos ordenados de menor a mayor a continuación:</h5>
+            <h3>Tabla Estadística Rapida</h3>
+            <h5>Tabla con los datos proporcionados ordenados de menor a mayor:</h5>
             <!-- El mensaje se manejará desde el JS -->
             <table class="table table-bordered results-table mt-4" id="sortedDataTable">
                 <tbody id="sortedDataBody"></tbody>
             </table>
             <!-- Mostrar las estadísticas debajo de la tabla -->
             <hr>
-            <div class="results">
-                <p id="mean"></p>
-                <p id="median"></p>
-                <p id="mode"></p>
-                <p id="quartiles"></p>
-                <p id="percentiles"></p>
-                <p id="meanDeviation"></p>
-                <p id="variance"></p>
-                <p id="stdDeviation"></p>
-                <p id="coefficientOfVariation"></p>
+            <h5>Medidas de posición:</h5>
+            <div class="row mt-3">
+                <div class="col-md-8">
+                    <div class="results">
+                        <p id="mode"></p>
+                        <p id="median"></p>
+                        <p id="mean"></p>
+                        <p id="quartiles"></p>
+                        <p id="percentiles"></p>
+                    </div>
+                </div>
             </div>
-            <hr>
-            <button class="btn btn-primary btn-lg btn-sm mx-1 mt-4" onclick="downloadStatistics()">Descargar Medidas
-                Estadísticas como PNG</button>
+            <button class="btn btn-primary btn-lg btn-sm mx-1 mt-3" onclick="downloadStatistics()">Exportar como
+                PNG</button>
         </div>
 
-        <!-- Modal para Distribución de Frecuencias -->
-        <div id="frequencyModalOverlay" class="modal-overlay"></div>
-        <div id="frequencyModal" class="modalFrec">
-            <button class="btn btn-danger btn-lg btn-sm mx-1 mb-5 close-modal"
-                onclick="closeFrequencyModal()">Volver</button>
-            <h3>Distribución de Frecuencias</h3>
-            <h5>Acontinuación se realiza la Distribución de frecuencias en las clases indicadas</h5>
-            <div class="table-responsive">
-                <table class="table table-bordered col-md-10 mx-auto mt-4">
-                    <thead>
-                        <tr>
-                            <th>Límites Indicados</th>
-                            <th>Límites Reales</th>
-                            <th>Puntos Medios (Xi)</th>
-                            <th>Frecuencia Absoluta (Fi)</th>
-                            <th>Frecuencia Relativa (%)</th>
-                            <th>ACUM "menos de" (Absoluta)</th>
-                            <th>ACUM "menos de" (Relativa)</th>
-                            <th>ACUM "más de" (Absoluta)</th>
-                            <th>ACUM "más de" (Relativa)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="frequencyTableBody"></tbody>
+        <!-- Modal Tabla estadistica completa-->
+        <div class="modal-overlay" id="combinedModalOverlay"></div>
+        <div class="modal modalCombined modal-lg" id="combinedModal">
+            <button class="btn btn-danger btn-lg btn-sm mx-1 close-modal" onclick="closeCombinedModal()">Volver</button>
+
+            <!-- Sección de Datos Ordenados -->
+            <div id="captureArea">
+                <h3>Tabla Estadística Completa</h3>
+                <h5>Tabla con los datos proporcionados ordenados de menor a mayor:</h5>
+                <table class="table table-bordered results-table mt-4" id="sortedDataTableCombined">
+                    <tbody id="sortedDataBodyCombined"></tbody>
                 </table>
+
+                <hr>
+
+                <!-- Sección de Distribución de Frecuencias -->
+                <h5>Tabla de Distribución de Frecuencias de los datos con <span id="classCountDisplay"></span> clases:
+                </h5>
+                <div class="table-responsive mt-2">
+                    <table class="table table-bordered col-md-10 mx-auto mt-4">
+                        <thead>
+                            <tr>
+                                <th>Límites Indicados</th>
+                                <th>Límites Reales</th>
+                                <th>Puntos Medios (Xi)</th>
+                                <th>Frecuencia Absoluta (Fi)</th>
+                                <th>Frecuencia Relativa (%)</th>
+                                <th>ACUM "menos de" (Absoluta)</th>
+                                <th>ACUM "menos de" (Relativa)</th>
+                                <th>ACUM "más de" (Absoluta)</th>
+                                <th>ACUM "más de" (Relativa)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="frequencyTableBody"></tbody>
+                    </table>
+                </div>
+
+                <hr>
+
+                <!-- Sección de Resultados Estadísticos en dos columnas -->
+                <h5>Medidas de posición y variabilidad:</h5>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="results">
+                            <p id="modeFrec"></p>
+                            <p id="medianFrec"></p>
+                            <p id="meanFrec"></p>
+                            <p id="quartilesFrec"></p>
+                            <p id="percentilesFrec"></p>
+                            <p id="amplitude"></p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p id="intervalo"></p>
+                        <p id="sumXiFi"></p>
+                        <p id="sumXiSquareFi"></p>
+                        <p id="varianceFrec"></p>
+                        <p id="stdDeviationFrec"></p>
+                        <p id="coefficientOfVariationFrec"></p>
+                    </div>
+                </div>
             </div>
-            <p id="amplitude"></p>
-            <p id="intervalo"></p>
-            <p id="meanDeviationFrec"></p>
-            <p id="meanFrec"></p>
-            <p id="sumXiFi"></p>
-            <p id="sumXiSquareFi"></p>
-            <p id="varianceFrec"></p>
-            <p id="stdDeviationFrec"></p>
-            <p id="coefficientOfVariationFrec"></p>
+
+            <button class="btn btn-primary btn-lg btn-sm mx-1 mt-4" onclick="downloadStatisticsCombined()">Exportar como
+                PNG</button>
         </div>
     </div>
     <footer class="footer mt-5">
