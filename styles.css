@@ -209,6 +209,45 @@ td .btnBR {
     background-color: #d4edda; /* Mismo tono verde claro */
     color: #155724; /* Color de texto oscuro para contraste */
 }
+.btn-faq {
+    color: white;
+}
+
+.percentile-row {
+    justify-content: flex-start;
+    margin-top: -20px; /* Ajusta para elevar todo el conjunto de elementos */
+}
+
+#percentileInput {
+    margin-right: -15px; /* Espaciado a la derecha del input */
+}
+
+.generate-button {
+    margin-left: -15px; /* Ajusta este valor para mover el botón hacia la izquierda */
+}
+
+#percentileResultFast {
+    margin-right: 35px; /* Espaciado a la derecha del botón para el resultado */
+    font-weight: bold;
+
+}
+
+#percentileResult {
+    margin-right: 20px; /* Espaciado a la derecha del botón para el resultado */
+    font-weight: bold;
+
+}
+
+.custom-green {
+    background-color: #2db72d; /* Color verde personalizado */
+    border-color: #2db72d; /* Borde del mismo color */
+    color: white;
+}
+.custom-green:hover {
+    background-color: #249a24; /* Tono más oscuro de verde */
+    border-color: #249a24;
+}
+
 
 @media (max-width: 768px) {
     /* Ajustar el contenedor de los botones para columnas */

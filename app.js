@@ -115,10 +115,34 @@ function getRandomBrightColor(alpha = 1) {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+// Paleta de colores en tonos fuertes
+const customColors = [
+    '#4CAF50', // Verde
+    '#2196F3', // Azul
+    '#F44336', // Rojo
+    '#FFEB3B', // Amarillo
+    '#FF9800', // Anaranjado
+    '#9C27B0', // Morado
+];
+
+// Función para generar colores brillantes y variados al azar
 function generateBrightColors(count) {
     const colors = [];
+    const usedColors = new Set(); // Usar un conjunto para evitar duplicados inmediatos
+
     for (let i = 0; i < count; i++) {
-        colors.push(getRandomBrightColor(0.8)); // Colores más vivos y variados 
+        let color;
+        do {
+            color = customColors[Math.floor(Math.random() * customColors.length)];
+        } while (usedColors.has(color) && usedColors.size < customColors.length);
+        
+        colors.push(color);
+        usedColors.add(color);
+
+        // Reiniciar el conjunto si se usaron todos los colores disponibles
+        if (usedColors.size === customColors.length) {
+            usedColors.clear();
+        }
     }
     return colors;
 }
@@ -223,6 +247,7 @@ function closeModal() {
     document.getElementById('modalOverlay').style.display = 'none';
 }
 
+// Función principal para generar el gráfico
 function generateChart(labels, datasets) {
     const chartType = getSelectedChartType();
     const ctx = document.getElementById('chartCanvas').getContext('2d');
@@ -238,79 +263,59 @@ function generateChart(labels, datasets) {
     chartDescription.style.display = 'none';
     chartDescriptionOtherGraphics.style.display = 'none';
 
-    // Mostrar el mensaje correspondiente según el tipo de gráfico
+    // Configura las descripciones según el tipo de gráfico
     if (chartType === 'pie') {
         chartDescription.style.display = 'block';
         chartDescription.innerText = 'Este gráfico muestra el promedio de los datos por atributo.';
     } else {
         chartDescriptionOtherGraphics.style.display = 'block';
-        chartDescriptionOtherGraphics.innerText = 'Porfavor pon el cursor sobre el gráfico para ver los valores de manera detallada.';
-        ;
+        chartDescriptionOtherGraphics.innerText = 'Por favor, pon el cursor sobre el gráfico para ver los valores de manera detallada.';
     }
 
     if (chart) {
         chart.destroy();
     }
 
-    if (chartType === 'boxplot') {
-        // Crear un array de datos por columna en lugar de filas
-        const table = document.getElementById('dataTable');
-        const bodyRows = table.getElementsByTagName('tbody')[0].rows;
-        const columnData = [];
+    // Obtener colores para cada conjunto de datos
+    const colors = generateBrightColors(datasets.length);
 
-        // Inicializar arrays para cada columna
-        const columnCount = bodyRows[0].cells.length - 2;
-        for (let j = 0; j < columnCount; j++) {
-            columnData[j] = [];
-        }
-
-        // Rellenar los arrays de cada columna con los datos
-        for (let i = 0; i < bodyRows.length; i++) {
-            const cells = bodyRows[i].cells;
-            for (let j = 1; j <= columnCount; j++) {
-                const value = cells[j].querySelector('input').value;
-                if (value !== '' && !isNaN(value)) { // Solo incluir valores numéricos válidos
-                    columnData[j - 1].push(parseFloat(value));
-                }
-            }
-        }
-
-        // Crear datasets específicos para el gráfico de cajas
-        const boxPlotData = columnData.map((data, index) => {
-            if (data.length === 0) return null; // Ignorar columnas sin datos válidos
-            return {
-                label: labels[index],
-                min: Math.min(...data),
-                q1: quantile(data, 0.25),
-                median: quantile(data, 0.5),
-                q3: quantile(data, 0.75),
-                max: Math.max(...data)
-            };
-        }).filter(item => item !== null); // Filtrar elementos nulos
+    if (chartType === 'horizontalBarStacked') {
+        // Gráfico de barras compuestas horizontales
+        datasets = datasets.map((dataset, index) => ({
+            ...dataset,
+            backgroundColor: colors[index],
+            borderColor: colors[index],
+            borderWidth: 1
+        }));
 
         chart = new Chart(ctx, {
-            type: 'boxplot',
+            type: 'bar',
             data: {
-                labels: labels, // Etiquetas para las columnas
-                datasets: [{
-                    label: 'Diagrama de Cajas',
-                    data: boxPlotData,
-                    backgroundColor: generateBrightColors(boxPlotData.length),
-                    borderColor: generateBrightColors(boxPlotData.length),
-                    borderWidth: 1
-                }]
+                labels: labels,
+                datasets: datasets
             },
             options: {
+                indexAxis: 'y', // Configura el gráfico en horizontal
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                },
+                responsive: true,
                 scales: {
+                    x: {
+                        beginAtZero: true,
+                        stacked: true // Habilita las barras apiladas
+                    },
                     y: {
-                        beginAtZero: true
+                        stacked: true // Habilita las barras apiladas
                     }
                 }
             }
         });
         chartDescription.style.display = 'none';
     } else if (chartType === 'pie') {
-        // Calcular promedios para el gráfico de pastel
+        // Gráfico circular
         const averages = labels.map((_, colIndex) => {
             let sum = 0;
             let count = 0;
@@ -330,17 +335,14 @@ function generateChart(labels, datasets) {
                 labels: labels,
                 datasets: [{
                     data: averages, // Usar promedios calculados
-                    backgroundColor: generateBrightColors(averages.length),
-                    borderColor: generateBrightColors(averages.length),
+                    backgroundColor: colors,
+                    borderColor: colors,
                     borderWidth: 1
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                layout: {
-                    padding: 20
-                },
                 plugins: {
                     legend: {
                         position: 'top',
@@ -356,23 +358,53 @@ function generateChart(labels, datasets) {
                             weight: 'bold',
                             size: 14
                         },
-                        formatter: (value) => value.toFixed(2) // Muestra el valor en las etiquetas
+                        formatter: (value) => value.toFixed(2)
                     }
                 }
             },
-            plugins: [ChartDataLabels] // Activar el plugin
+            plugins: [ChartDataLabels]
         });
-
-        // Mostrar descripción para el gráfico de pastel
         chartDescription.style.display = 'block';
-        chartDescription.innerText = 'Este gráfico muestra el promedio de los datos por atributo.';
-    } else {
-        // Otros gráficos
+    } else if (chartType === 'boxplot') {
+        // Gráfico de cajas (boxplot)
+        const columnData = [];
+        const bodyRows = document.getElementById('dataTable').getElementsByTagName('tbody')[0].rows;
+        const columnCount = bodyRows[0].cells.length - 2;
+
+        for (let j = 0; j < columnCount; j++) columnData[j] = [];
+        for (let i = 0; i < bodyRows.length; i++) {
+            const cells = bodyRows[i].cells;
+            for (let j = 1; j <= columnCount; j++) {
+                const value = cells[j].querySelector('input').value;
+                if (value !== '' && !isNaN(value)) {
+                    columnData[j - 1].push(parseFloat(value));
+                }
+            }
+        }
+
+        const boxPlotData = columnData.map((data, index) => {
+            if (data.length === 0) return null;
+            return {
+                label: labels[index],
+                min: Math.min(...data),
+                q1: quantile(data, 0.25),
+                median: quantile(data, 0.5),
+                q3: quantile(data, 0.75),
+                max: Math.max(...data)
+            };
+        }).filter(item => item !== null);
+
         chart = new Chart(ctx, {
-            type: chartType,
+            type: 'boxplot',
             data: {
                 labels: labels,
-                datasets: datasets
+                datasets: [{
+                    label: 'Diagrama de Cajas',
+                    data: boxPlotData,
+                    backgroundColor: colors,
+                    borderColor: colors,
+                    borderWidth: 1
+                }]
             },
             options: {
                 responsive: true,
@@ -384,8 +416,29 @@ function generateChart(labels, datasets) {
                 }
             }
         });
-
-        // Ocultar descripción si no es gráfico de pastel
+    } else {
+        // Otros tipos de gráficos (barras, líneas, etc.)
+        chart = new Chart(ctx, {
+            type: chartType,
+            data: {
+                labels: labels,
+                datasets: datasets.map((dataset, index) => ({
+                    ...dataset,
+                    backgroundColor: colors[index],
+                    borderColor: colors[index],
+                    borderWidth: 1
+                }))
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
         chartDescription.style.display = 'none';
     }
 }
@@ -699,7 +752,6 @@ function displayStatistics(data) {
         document.getElementById('median').innerText = `Mediana: N/A`;
         document.getElementById('mode').innerText = `Moda: N/A`;
         document.getElementById('quartiles').innerText = `Cuartiles: N/A`;
-        document.getElementById('percentiles').innerText = `Percentiles: N/A`;
         document.getElementById('meanDeviation').innerText = `Desviación Media: N/A`;
         document.getElementById('variance').innerText = `Varianza: N/A`;
         document.getElementById('stdDeviation').innerText = `Desviación Estándar: N/A`;
@@ -716,15 +768,59 @@ function displayStatistics(data) {
     const Q2 = quantile(validData, 0.5); // Mediana
     const Q3 = quantile(validData, 0.75);
 
-    // Percentiles
-    const P25 = quantile(validData, 0.25);
-    const P75 = quantile(validData, 0.75);
+   
 
     document.getElementById('mean').innerText = `Media: ${meanValue}`;
     document.getElementById('median').innerText = `Mediana: ${medianValue}`;
     document.getElementById('mode').innerText = `Moda: ${modeValue}`;
     document.getElementById('quartiles').innerText = `Cuartiles: Q1=${Q1}, Q2=${Q2}, Q3=${Q3}`;
-    document.getElementById('percentiles').innerText = `Percentiles: P25=${P25}, P75=${P75}`;
+}
+function generatePercentileFast() {
+    const percentileInput = document.getElementById('percentileInputFast').value;
+    const percentileResult = document.getElementById('percentileResultFast');
+
+    if (!percentileInput || percentileInput < 0 || percentileInput > 100) {
+        percentileResult.innerText = "Por favor, ingresa un percentil entre 0 y 100.";
+        return;
+    }
+
+    const data = getDataFromTableFrecuency().sort((a, b) => a - b);
+    const pos = (percentileInput / 100) * (data.length - 1);
+    const base = Math.floor(pos);
+    const rest = pos - base;
+
+    let percentileValue;
+    if (data[base + 1] !== undefined) {
+        percentileValue = data[base] + rest * (data[base + 1] - data[base]);
+    } else {
+        percentileValue = data[base];
+    }
+
+    percentileResult.innerText = `= ${percentileValue.toFixed(2)}`;
+}
+
+function generatePercentile() {
+    const percentileInput = document.getElementById('percentileInput').value;
+    const percentileResult = document.getElementById('percentileResult');
+
+    if (!percentileInput || percentileInput < 0 || percentileInput > 100) {
+        percentileResult.innerText = "Por favor, ingresa un percentil entre 0 y 100.";
+        return;
+    }
+
+    const data = getDataFromTableFrecuency().sort((a, b) => a - b);
+    const pos = (percentileInput / 100) * (data.length - 1);
+    const base = Math.floor(pos);
+    const rest = pos - base;
+
+    let percentileValue;
+    if (data[base + 1] !== undefined) {
+        percentileValue = data[base] + rest * (data[base + 1] - data[base]);
+    } else {
+        percentileValue = data[base];
+    }
+
+    percentileResult.innerText = `= ${percentileValue.toFixed(2)}`;
 }
 
 function quantile(arr, q) {
@@ -969,7 +1065,6 @@ function displayStatisticsCombined(data) {
         document.getElementById('median').innerText = `Mediana: N/A`;
         document.getElementById('mode').innerText = `Moda: N/A`;
         document.getElementById('quartiles').innerText = `Cuartiles: N/A`;
-        document.getElementById('percentiles').innerText = `Percentiles: N/A`;
         return;
     }
 
@@ -981,13 +1076,10 @@ function displayStatisticsCombined(data) {
     const Q2 = quantile(validData, 0.5).toFixed(2);
     const Q3 = quantile(validData, 0.75).toFixed(2);
 
-    const P25 = quantile(validData, 0.25).toFixed(2);
-    const P75 = quantile(validData, 0.75).toFixed(2);
-
     document.getElementById('medianFrec').innerText = `Mediana: ${medianValue}`;
     document.getElementById('modeFrec').innerText = `Moda: ${modeValue}`;
     document.getElementById('quartilesFrec').innerText = `Cuartiles: Q1=${Q1}, Q2=${Q2}, Q3=${Q3}`;
-    document.getElementById('percentilesFrec').innerText = `Percentiles: P25=${P25}, P75=${P75}`;
+
 }
 
 

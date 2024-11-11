@@ -19,10 +19,11 @@
 <body>
     <div class="header d-flex justify-content-between align-items-center px-3 py-2">
         <h1 class="text-center flex-grow-1">Herramienta Graficadora Estadística</h1>
-        <button class="btn btn-info btn-sm btn-lg mx-2">
+        <button class="btn btn-info btn-faq btn-sm btn-lg mx-2">
             <img src="faq.png" style="width: 35px; height: 35px; margin-right: 7px;">
             FAQ
         </button>
+        
     </div>
     <div class="container my-4 mt-5">
         <!-- Sección de Título y Descripción -->
@@ -54,6 +55,11 @@
                             onclick="selectSingleChart(this)">
                         <label class="form-check-label" for="boxplot">Diagrama de Cajas</label>
                     </div>
+                    <div class="form-check me-3">
+                        <input class="form-check-input chart-option" type="checkbox" id="horizontalBarStacked" value="horizontalBarStacked" onclick="selectSingleChart(this)">
+                        <label class="form-check-label" for="horizontalBarStacked">Barras Horizontales</label>
+                    </div>
+                    
                 </div>
             </div>
             <div class="col-md-6">
@@ -170,7 +176,19 @@
                         <p id="median"></p>
                         <p id="mean"></p>
                         <p id="quartiles"></p>
-                        <p id="percentiles"></p>
+                        
+                    </div>
+                    <div class="row mt-3 align-items-center percentile-row">
+                        <label for="percentileInput" class="form-label col-auto">Percentiles:</label>
+                        <div class="col-auto">
+                            <input type="number" id="percentileInputFast" class="form-control form-control-sm" placeholder="Ej. 25" style="width: 70px;">
+                        </div>
+                        <div class="col-auto">
+                            <span id="percentileResultFast" class="form-text percentile-result"></span>
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-sm custom-green" onclick="generatePercentileFast()">Generar</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -226,9 +244,22 @@
                             <p id="medianFrec"></p>
                             <p id="meanFrec"></p>
                             <p id="quartilesFrec"></p>
-                            <p id="percentilesFrec"></p>
                             <p id="amplitude"></p>
                         </div>
+                        <div class="row mt-3 align-items-center percentile-row">
+                            <label for="percentileInput" class="form-label col-auto">Percentiles:</label>
+                            <div class="col-auto">
+                                <input type="number" id="percentileInput" class="form-control form-control-sm" placeholder="Ej. 25" style="width: 70px;">
+                            </div>
+                            <div class="col-auto">
+                                <span id="percentileResult" class="form-text percentile-result"></span>
+                            </div>
+                            <div class="col-auto">
+                                <button class="btn btn-sm custom-green" onclick="generatePercentile()">Generar</button>
+                            </div>
+                        </div>
+                        
+                        
                     </div>
                     <div class="col-md-6">
                         <p id="intervalo"></p>
