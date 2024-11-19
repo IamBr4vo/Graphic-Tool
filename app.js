@@ -123,6 +123,22 @@ const customColors = [
     '#FFEB3B', // Amarillo
     '#FF9800', // Anaranjado
     '#9C27B0', // Morado
+    '#8BC34A', // Verde claro
+    '#3F51B5', // Azul oscuro
+    '#FF5722', // Naranja oscuro
+    '#00BCD4', // Cian
+    '#CDDC39', // Verde lima
+    '#673AB7', // Púrpura oscuro
+    '#FFC107', // Ámbar
+    '#E91E63', // Rosa
+    '#795548', // Marrón
+    '#009688', // Verde azulado
+    '#607D8B', // Azul grisáceo
+    '#FFCDD2', // Rosa claro
+    '#D32F2F', // Rojo oscuro
+    '#388E3C'  // Verde oscuro
+
+
 ];
 
 // Función para generar colores brillantes y variados al azar
@@ -135,7 +151,7 @@ function generateBrightColors(count) {
         do {
             color = customColors[Math.floor(Math.random() * customColors.length)];
         } while (usedColors.has(color) && usedColors.size < customColors.length);
-        
+
         colors.push(color);
         usedColors.add(color);
 
@@ -759,7 +775,8 @@ function displayStatistics(data) {
         return;
     }
 
-    const meanValue = (validData.reduce((acc, val) => acc + val, 0) / validData.length).toFixed(2);
+    // Paso 1: Calcular la media, mediana y moda
+    const meanValue = validData.reduce((acc, val) => acc + val, 0) / validData.length;
     const medianValue = quantile(validData, 0.5).toFixed(2);
     const modeValue = getMode(validData).toString();
 
@@ -768,13 +785,35 @@ function displayStatistics(data) {
     const Q2 = quantile(validData, 0.5); // Mediana
     const Q3 = quantile(validData, 0.75);
 
-   
+    // Paso 2: Calcular desviaciones absolutas para la desviación media
+    const absoluteDeviations = validData.map(val => Math.abs(val - meanValue));
+    const sumOfAbsoluteDeviations = absoluteDeviations.reduce((acc, absDev) => acc + absDev, 0);
+    const meanDeviation = (sumOfAbsoluteDeviations - meanValue) / validData.length;
 
-    document.getElementById('mean').innerText = `Media: ${meanValue}`;
+    // Paso 3: Calcular las desviaciones al cuadrado para la varianza y desviación estándar
+    const squaredDeviations = validData.map(val => Math.pow(val - meanValue, 2));
+    const sumOfSquaredDeviations = truncateToTwoDecimals(squaredDeviations.reduce((acc, squaredDev) => acc + squaredDev, 0));
+
+    // Paso 4: Calcular la varianza
+    const variance = sumOfSquaredDeviations / (validData.length - 1);
+
+    // Paso 5: Calcular la desviación estándar
+    const stdDeviation = truncateToTwoDecimals(Math.sqrt(variance));
+
+    // Paso 6: Calcular el coeficiente de variación
+    const coefficientOfVariation =  truncateToTwoDecimals((stdDeviation / meanValue) * 100);
+
+    // Mostrar los resultados en el HTML
+    document.getElementById('mean').innerText = `Media: ${meanValue.toFixed(2)}`;
     document.getElementById('median').innerText = `Mediana: ${medianValue}`;
     document.getElementById('mode').innerText = `Moda: ${modeValue}`;
-    document.getElementById('quartiles').innerText = `Cuartiles: Q1=${Q1}, Q2=${Q2}, Q3=${Q3}`;
+    document.getElementById('quartiles').innerText = `Cuartiles: Q1=${Q1.toFixed(2)}, Q2=${Q2.toFixed(2)}, Q3=${Q3.toFixed(2)}`;
+    document.getElementById('meanDeviation').innerText = `Desviación Media: ${meanDeviation.toFixed(2)}`;
+    document.getElementById('variance').innerText = `Varianza: ${variance}`;
+    document.getElementById('stdDeviation').innerText = `Desviación Estándar: ${stdDeviation.toFixed(2)}`;
+    document.getElementById('coefficientOfVariation').innerText = `Coeficiente de Variación: ${coefficientOfVariation.toFixed(2)}%`;
 }
+
 function generatePercentileFast() {
     const percentileInput = document.getElementById('percentileInputFast').value;
     const percentileResult = document.getElementById('percentileResultFast');
@@ -1068,7 +1107,7 @@ function displayStatisticsCombined(data) {
         return;
     }
 
-    const meanValue = (validData.reduce((acc, val) => acc + val, 0) / validData.length).toFixed(2);
+    //const meanValue = (validData.reduce((acc, val) => acc + val, 0) / validData.length).toFixed(2);
     const medianValue = quantile(validData, 0.5).toFixed(2);
     const modeValue = getMode(validData).toString();
 

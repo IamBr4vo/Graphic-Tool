@@ -170,13 +170,12 @@
             <hr>
             <h5>Medidas de posición:</h5>
             <div class="row mt-3">
-                <div class="col-md-8">
+                <div class="col-md-6">
                     <div class="results">
                         <p id="mode"></p>
                         <p id="median"></p>
                         <p id="mean"></p>
                         <p id="quartiles"></p>
-                        
                     </div>
                     <div class="row mt-3 align-items-center percentile-row">
                         <label for="percentileInput" class="form-label col-auto">Percentiles:</label>
@@ -189,6 +188,14 @@
                         <div class="col-auto">
                             <button class="btn btn-sm custom-green" onclick="generatePercentileFast()">Generar</button>
                         </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="results">
+                        <p id="meanDeviation"></p>
+                        <p id="variance"></p>
+                        <p id="stdDeviation"></p>
+                        <p id="coefficientOfVariation"></p>
                     </div>
                 </div>
             </div>
@@ -243,8 +250,8 @@
                             <p id="modeFrec"></p>
                             <p id="medianFrec"></p>
                             <p id="meanFrec"></p>
-                            <p id="quartilesFrec"></p>
                             <p id="amplitude"></p>
+                            <p id="quartilesFrec"></p>
                         </div>
                         <div class="row mt-3 align-items-center percentile-row">
                             <label for="percentileInput" class="form-label col-auto">Percentiles:</label>
