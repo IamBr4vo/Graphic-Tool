@@ -344,15 +344,15 @@ function generateChart(labels, datasets) {
             });
             return count > 0 ? sum / count : 0;
         });
-
+    
         chart = new Chart(ctx, {
             type: 'pie',
             data: {
                 labels: labels,
                 datasets: [{
                     data: averages, // Usar promedios calculados
-                    backgroundColor: colors,
-                    borderColor: colors,
+                    backgroundColor: generateBrightColors(labels.length), // Usar colores por atributo
+                    borderColor: generateBrightColors(labels.length), // Bordes iguales a los colores de fondo
                     borderWidth: 1
                 }]
             },
@@ -384,50 +384,50 @@ function generateChart(labels, datasets) {
     } else if (chartType === 'boxplot') {
         // Gráfico de cajas (boxplot)
         const columnData = [];
-        const bodyRows = document.getElementById('dataTable').getElementsByTagName('tbody')[0].rows;
-        const columnCount = bodyRows[0].cells.length - 2;
+    const bodyRows = document.getElementById('dataTable').getElementsByTagName('tbody')[0].rows;
+    const columnCount = bodyRows[0].cells.length - 2;
 
-        for (let j = 0; j < columnCount; j++) columnData[j] = [];
-        for (let i = 0; i < bodyRows.length; i++) {
-            const cells = bodyRows[i].cells;
-            for (let j = 1; j <= columnCount; j++) {
-                const value = cells[j].querySelector('input').value;
-                if (value !== '' && !isNaN(value)) {
-                    columnData[j - 1].push(parseFloat(value));
-                }
+    for (let j = 0; j < columnCount; j++) columnData[j] = [];
+    for (let i = 0; i < bodyRows.length; i++) {
+        const cells = bodyRows[i].cells;
+        for (let j = 1; j <= columnCount; j++) {
+            const value = cells[j].querySelector('input').value;
+            if (value !== '' && !isNaN(value)) {
+                columnData[j - 1].push(parseFloat(value));
             }
         }
+    }
 
-        const boxPlotData = columnData.map((data, index) => {
-            if (data.length === 0) return null;
-            return {
-                label: labels[index],
-                min: Math.min(...data),
-                q1: quantile(data, 0.25),
-                median: quantile(data, 0.5),
-                q3: quantile(data, 0.75),
-                max: Math.max(...data)
-            };
-        }).filter(item => item !== null);
+    const boxPlotData = columnData.map((data, index) => {
+        if (data.length === 0) return null;
+        return {
+            label: labels[index],
+            min: Math.min(...data),
+            q1: quantile(data, 0.25),
+            median: quantile(data, 0.5),
+            q3: quantile(data, 0.75),
+            max: Math.max(...data)
+        };
+    }).filter(item => item !== null);
 
-        chart = new Chart(ctx, {
-            type: 'boxplot',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Diagrama de Cajas',
-                    data: boxPlotData,
-                    backgroundColor: colors,
-                    borderColor: colors,
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true
+    chart = new Chart(ctx, {
+        type: 'boxplot',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Diagrama de Cajas',
+                data: boxPlotData,
+                backgroundColor: generateBrightColors(labels.length), // Colores por atributo
+                borderColor: generateBrightColors(labels.length), // Bordes iguales a los colores de fondo
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
                     }
                 }
             }
@@ -547,73 +547,87 @@ function wrapText(ctx, text, maxWidth, lineHeight) {
 
 
 function downloadStatistics() {
-    const title = "Medidas Estadísticas";
-    const description = "Tabla con los datos ordenados de menor a mayor a continuación:";
-    const table = document.getElementById('sortedDataTable');
-    const meanText = document.getElementById('mean').innerText;
-    const medianText = document.getElementById('median').innerText;
-    const modeText = document.getElementById('mode').innerText;
+    const captureElement = document.getElementById('captureAreaFast');
 
-    // Crear un canvas temporal para incluir texto y tabla
-    const tempCanvas = document.createElement('canvas');
-    const ctx = tempCanvas.getContext('2d');
+    // Seleccionar los elementos a ocultar
+    const percentileInput = document.getElementById('percentileInputFast');
+    const percentileButton = document.querySelector('button[onclick="generatePercentileFast()"]');
+    const percentileResult = document.getElementById('percentileResultFast');
 
-    // Configurar dimensiones del canvas
-    tempCanvas.width = 800;
-    tempCanvas.height = 400; // Ajustar para el tamaño necesario
+    // Validar si el input no tiene valor o si el resultado está vacío
+    const shouldHideInputAndResult =
+        percentileInput.value.trim() === '' || // Si el input está vacío
+        percentileResult.textContent.trim() === ''; // O si el resultado está vacío
 
-    // Añadir fondo blanco al canvas
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-
-    // Estilo de texto y encabezados
-    ctx.fillStyle = "#000";
-    ctx.font = "20px Arial";
-    ctx.fillText(title, 10, 30);
-
-    ctx.font = "14px Arial";
-    ctx.fillText(description, 10, 60);
-
-    // Dibujar la tabla en el canvas
-    let startY = 80; // Punto de inicio para la tabla
-    const rowHeight = 25; // Altura de cada fila
-    const columnWidth = tempCanvas.width / table.rows[0].cells.length;
-
-    // Recorrer filas y columnas de la tabla para dibujarlas en el canvas
-    for (let rowIndex = 0; rowIndex < table.rows.length; rowIndex++) {
-        const row = table.rows[rowIndex];
-        for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex++) {
-            const cell = row.cells[cellIndex];
-            ctx.strokeStyle = '#ddd';
-            ctx.strokeRect(cellIndex * columnWidth, startY, columnWidth, rowHeight);
-            ctx.fillText(cell.innerText, cellIndex * columnWidth + 10, startY + 18);
-        }
-        startY += rowHeight; // Moverse a la siguiente fila
+    if (shouldHideInputAndResult) {
+        percentileInput.style.display = 'none'; // Ocultar el input
+        percentileResult.style.display = 'none'; // Ocultar el resultado
     }
 
-    // Dibujar las estadísticas debajo de la tabla
-    ctx.font = "16px Arial";
-    ctx.fillText(meanText, 10, startY + 30);
-    ctx.fillText(medianText, 10, startY + 60);
-    ctx.fillText(modeText, 10, startY + 90);
+    percentileButton.style.display = 'none'; // El botón siempre debe ocultarse
 
-    // Descargar la imagen como PNG
-    const link = document.createElement('a');
-    link.href = tempCanvas.toDataURL('image/png');
-    link.download = 'medidas_estadisticas.png';
-    link.click();
+    // Realizar la captura con html2canvas
+    html2canvas(captureElement, { scale: 2 }).then((canvas) => {
+        // Restaurar los elementos ocultos
+        percentileInput.style.display = '';
+        percentileButton.style.display = '';
+        percentileResult.style.display = '';
+
+        // Descargar la imagen capturada
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = 'estadisticas_rapidas.png';
+        link.click();
+    }).catch((error) => {
+        // Restaurar los elementos en caso de error
+        percentileInput.style.display = '';
+        percentileButton.style.display = '';
+        percentileResult.style.display = '';
+        console.error("Error al capturar la imagen:", error);
+    });
 }
 
 function downloadStatisticsCombined() {
     const captureElement = document.getElementById('captureArea');
 
+    // Seleccionar los elementos a ocultar
+    const percentileInput = document.getElementById('percentileInput');
+    const percentileButton = document.querySelector('button[onclick="generatePercentile()"]');
+    const percentileResult = document.getElementById('percentileResult');
+
+    // Validar condiciones: si el span no tiene texto o el input no tiene valor
+    const shouldHideInput = 
+        percentileResult.textContent.trim() === '' || // Si el span está vacío
+        percentileInput.value.trim() === ''; // Si el input no tiene un número
+
+    if (shouldHideInput) {
+        percentileInput.style.display = 'none'; // Ocultar el input si no cumple las condiciones
+        percentileResult.style.display = 'none'; // Ocultar el resultado
+    }
+    percentileButton.style.display = 'none'; // El botón siempre debe ocultarse
+
+    // Realizar la captura con html2canvas
     html2canvas(captureElement, { scale: 2 }).then((canvas) => {
+        // Restaurar los elementos ocultos
+        percentileInput.style.display = '';
+        percentileButton.style.display = '';
+        percentileResult.style.display = '';
+
+        // Descargar la imagen capturada
         const link = document.createElement('a');
         link.href = canvas.toDataURL('image/png');
         link.download = 'estadisticas_completas.png';
         link.click();
+    }).catch((error) => {
+        // Restaurar los elementos en caso de error
+        percentileInput.style.display = '';
+        percentileButton.style.display = '';
+        console.error("Error al capturar la imagen:", error);
     });
 }
+
+
+
 
 function exportTableAsPNG() {
     const title = document.getElementById('graphTitle').value;
@@ -788,7 +802,7 @@ function displayStatistics(data) {
     // Paso 2: Calcular desviaciones absolutas para la desviación media
     const absoluteDeviations = validData.map(val => Math.abs(val - meanValue));
     const sumOfAbsoluteDeviations = absoluteDeviations.reduce((acc, absDev) => acc + absDev, 0);
-    const meanDeviation = (sumOfAbsoluteDeviations - meanValue) / validData.length;
+    const meanDeviation = sumOfAbsoluteDeviations / validData.length;
 
     // Paso 3: Calcular las desviaciones al cuadrado para la varianza y desviación estándar
     const squaredDeviations = validData.map(val => Math.pow(val - meanValue, 2));
