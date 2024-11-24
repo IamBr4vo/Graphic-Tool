@@ -783,7 +783,7 @@ function displayStatistics(data) {
         document.getElementById('mode').innerText = `Moda: N/A`;
         document.getElementById('quartiles').innerText = `Cuartiles: N/A`;
         document.getElementById('meanDeviation').innerText = `Desviación Media: N/A`;
-        document.getElementById('variance').innerText = `Varianza: N/A`;
+        document.getElementById('variance').innerText = `Variancia: N/A`;
         document.getElementById('stdDeviation').innerText = `Desviación Estándar: N/A`;
         document.getElementById('coefficientOfVariation').innerText = `Coeficiente de Variación: N/A`;
         return;
@@ -804,11 +804,11 @@ function displayStatistics(data) {
     const sumOfAbsoluteDeviations = absoluteDeviations.reduce((acc, absDev) => acc + absDev, 0);
     const meanDeviation = sumOfAbsoluteDeviations / validData.length;
 
-    // Paso 3: Calcular las desviaciones al cuadrado para la varianza y desviación estándar
+    // Paso 3: Calcular las desviaciones al cuadrado para la variancia y desviación estándar
     const squaredDeviations = validData.map(val => Math.pow(val - meanValue, 2));
     const sumOfSquaredDeviations = truncateToTwoDecimals(squaredDeviations.reduce((acc, squaredDev) => acc + squaredDev, 0));
 
-    // Paso 4: Calcular la varianza
+    // Paso 4: Calcular la variancia
     const variance = sumOfSquaredDeviations / (validData.length - 1);
 
     // Paso 5: Calcular la desviación estándar
@@ -823,7 +823,7 @@ function displayStatistics(data) {
     document.getElementById('mode').innerText = `Moda: ${modeValue}`;
     document.getElementById('quartiles').innerText = `Cuartiles: Q1=${Q1.toFixed(2)}, Q2=${Q2.toFixed(2)}, Q3=${Q3.toFixed(2)}`;
     document.getElementById('meanDeviation').innerText = `Desviación Media: ${meanDeviation.toFixed(2)}`;
-    document.getElementById('variance').innerText = `Varianza: ${variance}`;
+    document.getElementById('variance').innerText = `Variancia: ${variance}`;
     document.getElementById('stdDeviation').innerText = `Desviación Estándar: ${stdDeviation.toFixed(2)}`;
     document.getElementById('coefficientOfVariation').innerText = `Coeficiente de Variación: ${coefficientOfVariation.toFixed(2)}%`;
 }
@@ -1171,7 +1171,7 @@ function generateFrequencyTable(classCount) {
     let totalAbsoluteFrequency = 0;
     let totalRelativeFrequency = 0;
 
-    // Variables para las sumatorias necesarias para calcular varianza y desviación estándar
+    // Variables para las sumatorias necesarias para calcular variancia y desviación estándar
     let sumXiFi = 0;
     let sumXiSquareFi = 0;
 
@@ -1206,7 +1206,7 @@ function generateFrequencyTable(classCount) {
         cumulativeFrequencyMore -= absoluteFrequency;
         cumulativeRelativeMore -= relativeFrequency;
 
-        // Sumatorias para varianza y desviación estándar
+        // Sumatorias para variancia y desviación estándar
         sumXiFi += midpoint * absoluteFrequency;
         sumXiSquareFi += truncateToTwoDecimals(Math.pow(midpoint, 2)) * absoluteFrequency;
 
@@ -1230,7 +1230,7 @@ function generateFrequencyTable(classCount) {
     const validData = data.filter(value => !isNaN(value));
     const meanValue = (validData.reduce((acc, val) => acc + val, 0) / validData.length).toFixed(2);
 
-    // Cálculo de la varianza
+    // Cálculo de la variancia
     const variance = (sumXiSquareFi - (Math.pow(sumXiFi, 2) / totalAbsoluteFrequency)) / (totalAbsoluteFrequency - 1);
 
     // Cálculo de la desviación estándar
@@ -1243,7 +1243,7 @@ function generateFrequencyTable(classCount) {
     document.getElementById('meanFrec').innerText = `Media Aritmética: ${meanValue}`;
     document.getElementById('sumXiFi').innerText = `Sumatoria XiFi: ${sumXiFi.toFixed(2)}`;
     document.getElementById('sumXiSquareFi').innerText = `Sumatoria Xi^2Fi: ${sumXiSquareFi.toFixed(2)}`;
-    document.getElementById('varianceFrec').innerText = `Varianza: ${variance}`;
+    document.getElementById('varianceFrec').innerText = `Variancia: ${variance}`;
     document.getElementById('stdDeviationFrec').innerText = `Desviación Estándar: ${stdDeviation.toFixed(2)}`;
     document.getElementById('coefficientOfVariationFrec').innerText = `Coeficiente de Variación: ${coefficientOfVariation.toFixed(2)}%`;
 
