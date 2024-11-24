@@ -34,7 +34,7 @@ function deleteRow(button) {
         const row = button.parentNode.parentNode;
         row.parentNode.removeChild(row);
     } else {
-        alert("No se puede eliminar la última fila.");
+        showModalError("No se puede eliminar la última fila.");
     }
 }
 
@@ -53,7 +53,7 @@ function deleteColumn() {
             bodyRows[i].deleteCell(bodyRows[i].cells.length - 2);
         }
     } else {
-        alert("No puedes eliminar todas las columnas.");
+        showModalError("No puedes eliminar todas las columnas.");
     }
 }
 
@@ -193,7 +193,7 @@ function executeSelectedAction() {
             // Validar si el número de clases está ingresado
             const classCount = parseInt(classCountInput.value);
             if (isNaN(classCount) || classCount < 1) {
-                alert("Por favor, ingresa un número válido de clases.");
+                showModalError("Por favor, ingresa un número válido de clases.");
                 return;
             }
 
@@ -204,7 +204,7 @@ function executeSelectedAction() {
             showCombinedModal();
             break;
         default:
-            alert("Por favor, selecciona una acción válida.");
+            showModalError("Por favor, selecciona una acción válida.");
     }
 }
 
@@ -240,7 +240,16 @@ function showModal() {
 
     // Validación general
     if (headerInputs.every(attr => !attr) || !hasLabel || !hasValue) {
-        alert("Necesitas ingresar mínimo un atributo, una etiqueta y un valor para poder graficar.");
+        showModalError("Necesitas ingresar mínimo un atributo, una etiqueta y un valor para poder graficar.");
+        return;
+    }
+
+    // Verificar si se seleccionó un tipo de gráfico
+    const chartTypeSelected = Array.from(document.querySelectorAll('.chart-option'))
+        .some(option => option.checked);
+
+    if (!chartTypeSelected) {
+        showModalError("Por favor, selecciona un tipo de gráfico antes de continuar.");
         return;
     }
 
@@ -271,7 +280,7 @@ function generateChart(labels, datasets) {
     const chartDescriptionOtherGraphics = document.getElementById('chartDescriptionOtherGraphics');
 
     if (!chartType) {
-        alert("Por favor, selecciona un tipo de gráfico.");
+        showModalError("Por favor, selecciona un tipo de gráfico.");
         return;
     }
 
@@ -730,27 +739,27 @@ function wrapText(ctx, text, maxWidth, fontSize) {
     return lines;
 }
 
-
 function clearTableData() {
-    // Confirmación antes de limpiar los datos
-    const confirmClear = confirm("¿Estás seguro que quieres limpiar los datos de la tabla?");
-    if (!confirmClear) {
-        return; // Salir si el usuario cancela 
-    }
+    document.getElementById('clearTableModal').style.display = 'flex';
+}
 
+// Función para confirmar y limpiar la tabla
+function confirmClearTable() {
     const table = document.getElementById('dataTable');
-
-    // Limpiar entradas en el cuerpo de la tabla (etiquetas y valores)
     const bodyInputs = table.querySelectorAll('tbody input');
     bodyInputs.forEach(input => {
         input.value = '';
     });
-
-    // Limpiar entradas en los encabezados de la tabla (atributos)                             
     const headerInputs = table.querySelectorAll('thead input');
     headerInputs.forEach(input => {
         input.value = '';
     });
+    closeClearTableModal();
+}
+
+// Función para cerrar el modal sin limpiar
+function closeClearTableModal() {
+    document.getElementById('clearTableModal').style.display = 'none';
 }
 
 
@@ -933,7 +942,7 @@ function showStatisticsModal() {
 
     // Validación: requiere al menos dos datos válidos
     if (validDataCount < 2) {
-        alert("Necesitas ingresar al menos dos datos numéricos para mostrar las estadísticas.");
+        showModalError("Necesitas ingresar al menos dos datos numéricos para mostrar las estadísticas.");
         return; // Asegura que la ejecución se detenga aquí
     }
 
@@ -1069,7 +1078,7 @@ function showCombinedModal() {
     }
 
     if (validDataCount < 2) {
-        alert("Necesitas ingresar al menos dos datos numéricos para mostrar las estadísticas.");
+        showModalError("Necesitas ingresar al menos dos datos numéricos para mostrar las estadísticas.");
         return;
     }
 
@@ -1079,7 +1088,7 @@ function showCombinedModal() {
 
     const classCount = parseInt(document.getElementById('classCount').value);
     if (isNaN(classCount) || classCount < 1) {
-        alert("Por favor, ingresa un número válido de clases.");
+        showModalError("Por favor, ingresa un número válido de clases.");
         return;
     }
 
@@ -1267,4 +1276,16 @@ function generateFrequencyTable(classCount) {
 // Función para truncar a dos decimales sin redondear
 function truncateToTwoDecimals(num) {
     return Math.floor(num * 100) / 100;
+}
+
+function showModalError(message) {
+    const modal = document.getElementById('customModal');
+    const modalMessage = document.getElementById('modalMessage');
+    modalMessage.innerText = message;
+    modal.style.display = 'flex';
+}
+
+function closeModalError() {
+    const modal = document.getElementById('customModal');
+    modal.style.display = 'none';
 }
